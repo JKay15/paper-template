@@ -599,6 +599,23 @@ def SampleConcentrationData.toFiniteClassConcentrationData
   hTailLe := S.hTailLe
 
 /--
+Build sample-level concentration data from a uniform finite-class tail bound
+`μ (bad h) ≤ δ`.
+-/
+def SampleConcentrationData.ofUniformTail
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (nSamples : Nat) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ) :
+    SampleConcentrationData (Ω := Ω) (H := H) where
+  μ := μ
+  bad := bad
+  nSamples := nSamples
+  tail := fun _ => δ
+  δ := δ
+  hConc := hTail
+  hTailLe := by intro h; simp
+
+/--
 Packaged standard activation assumptions:
 `act 0 = 0` and 1-Lipschitz in mathlib's `LipschitzWith` sense.
 -/
@@ -1117,6 +1134,35 @@ theorem theorem43_with_pac_from_sample_concentration_natural_scale_activationDat
     hB2 hB2'Half hC2 hm AAct hW hX
 
 /--
+Theorem 43 + PAC from a uniform tail bound `μ (bad h) ≤ δ`
+using the sample-level concentration template (non-data endpoint).
+-/
+theorem theorem43_with_pac_from_uniform_tail_sample_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω)
+    (n : Nat) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ)
+    (m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  simpa [SampleConcentrationData.ofUniformTail] using
+    theorem43_with_pac_from_sample_concentration_natural_scale_activationData
+      (S := SampleConcentrationData.ofUniformTail μ bad n δ hTail)
+      (m := m) (d := d) (hn := hn)
+      (w := w) (x := x)
+      (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm AAct hW hX
+
+/--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from theorem inputs.
 -/
@@ -1317,5 +1363,30 @@ theorem theorem43_with_pac_from_sample_concentration_data_natural_scale_activati
     (n := S.nSamples) (m := m) (d := d) (hn := hn)
     (D := D) (act := act) (B2' := B2')
     hB2'Half hm AAct
+
+/--
+Theorem 43 + PAC from a uniform tail bound `μ (bad h) ≤ δ`
+using the sample-level concentration template (data endpoint).
+-/
+theorem theorem43_with_pac_from_uniform_tail_sample_data_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω)
+    (n : Nat) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ)
+    (m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  simpa [SampleConcentrationData.ofUniformTail] using
+    theorem43_with_pac_from_sample_concentration_data_natural_scale_activationData
+      (S := SampleConcentrationData.ofUniformTail μ bad n δ hTail)
+      (m := m) (d := d) (hn := hn)
+      (D := D) (act := act) (B2' := B2')
+      hB2'Half hm AAct
 
 end Paper.BlindTests
