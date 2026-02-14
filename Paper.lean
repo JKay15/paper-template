@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Xiong Jiangkai, Codex
 -/
 import Paper.Smoke
+import Paper.CaseStudies.NN_Th42_Th43
 
 /-!
 # Paper

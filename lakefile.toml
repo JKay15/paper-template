@@ -17,7 +17,7 @@ rev = "v4.27.0"
 [[require]]
 name = "MLTheory"
 git = "https://github.com/JKay15/mltheory-lean.git"
-rev = "v0.1.0"
+rev = "v0.2.0"
 
 [[lean_lib]]
 name = "Paper"
