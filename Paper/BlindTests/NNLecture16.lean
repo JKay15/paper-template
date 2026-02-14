@@ -474,4 +474,40 @@ theorem theorem43_with_pac_concentration_natural_scale
       hB2 hB2'Half hC2 hm hLip0 hW hX
   · exact pac_badEvent_uniform_bound μ bad δ hTail
 
+/--
+Theorem 43 + PAC from concentration premises (natural scale version):
+replace direct `hTail` with a two-step concentration assumption
+`μ(bad h) ≤ tail h ≤ δ`.
+-/
+theorem theorem43_with_pac_from_concentration_natural_scale
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (tail : H -> ENNReal) (δ : ENNReal)
+    (hConc : ∀ h : H, μ (bad h) ≤ tail h)
+    (hTailLe : ∀ h : H, tail h ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  constructor
+  · exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
+      (n := n) (m := m) (d := d) (hn := hn)
+      (w := w) (x := x) (act := act)
+      (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm hLip0 hW hX
+  · calc
+      μ (⋃ h : H, bad h) ≤ ∑ h : H, tail h :=
+        pac_badEvent_from_concentration μ bad tail hConc
+      _ ≤ ∑ h : H, δ :=
+        Finset.sum_le_sum (fun h _ => hTailLe h)
+      _ = (Fintype.card H : ENNReal) * δ := by
+        simp
+
 end Paper.BlindTests
