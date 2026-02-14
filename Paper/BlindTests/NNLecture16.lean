@@ -46,6 +46,15 @@ def UniversalApproxProperty {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
   ∀ f : C(X, Real), ∀ ε : Real, 0 < ε -> ∃ θ : Θ, ‖NN θ - f‖ ≤ ε
 
 /--
+Algorithmic universal approximation interface:
+provides an explicit parameter selector `approx f ε` with an error guarantee.
+-/
+structure UniversalApproxAlgorithm {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real)) where
+  approx : C(X, Real) -> Real -> Θ
+  spec : ∀ f : C(X, Real), ∀ ε : Real, 0 < ε -> ‖NN (approx f ε) - f‖ ≤ ε
+
+/--
 Theorem 42 (universal approximation, abstract form):
 if the NN family is dense in `C(X, R)`, then every target can be approximated uniformly.
 -/
@@ -75,6 +84,16 @@ theorem universalApproxProperty_of_denseRange
   intro f ε hε
   exact theorem42_neural_networks_are_universal (NN := NN) hDense f hε
 
+/-- Any algorithmic approximator induces the existential universal property. -/
+theorem universalApproxProperty_of_algorithm
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real))
+    (A : UniversalApproxAlgorithm NN) :
+    UniversalApproxProperty NN := by
+  intro f ε hε
+  refine ⟨A.approx f ε, ?_⟩
+  exact A.spec f ε hε
+
 /--
 Theorem 42 in de-assumed interface form:
 use `UniversalApproxProperty` directly, without taking `hDense` as input.
@@ -86,6 +105,16 @@ theorem theorem42_neural_networks_are_universal_deassumed
     (fStar : C(X, Real)) {ε : Real} (hε : 0 < ε) :
     ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
   exact hU fStar ε hε
+
+/-- Theorem 42 from an explicit approximation algorithm. -/
+theorem theorem42_neural_networks_are_universal_from_algorithm
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real))
+    (A : UniversalApproxAlgorithm NN)
+    (fStar : C(X, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
+  exact theorem42_neural_networks_are_universal_deassumed
+    (NN := NN) (hU := universalApproxProperty_of_algorithm NN A) fStar hε
 
 /-- Unit-cube domain `[0,1]^d` encoded as a subtype of `Fin d -> Real`. -/
 abbrev UnitCube (d : Nat) := {x : InputVec d // ∀ i : Fin d, x i ∈ Set.Icc (0 : Real) 1}
@@ -109,6 +138,17 @@ theorem theorem42_on_unit_cube_deassumed
     (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
     ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
   exact theorem42_neural_networks_are_universal_deassumed (NN := NN) hU fStar hε
+
+/-- Unit-cube Theorem 42 from an explicit approximation algorithm. -/
+theorem theorem42_on_unit_cube_from_algorithm
+    {d : Nat} {Θ : Type*}
+    [CompactSpace (UnitCube d)]
+    (NN : Θ -> C(UnitCube d, Real))
+    (A : UniversalApproxAlgorithm NN)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
+  exact theorem42_on_unit_cube_deassumed
+    (NN := NN) (hU := universalApproxProperty_of_algorithm NN A) fStar hε
 
 /--
 Theorem 43 (Rademacher upper bound, abstract form):
