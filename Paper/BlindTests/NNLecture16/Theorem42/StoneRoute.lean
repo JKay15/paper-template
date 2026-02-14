@@ -323,6 +323,18 @@ structure TwoLayerStoneRouteEvalSeparationOpsData
       ops.realizeC (sepParam x y) x ≠ ops.realizeC (sepParam x y) y
 
 /--
+Coordinate-driven constructive interface:
+users provide one parameter for each coordinate projection, then point separation
+is synthesized automatically.
+-/
+structure TwoLayerStoneRouteEvalCoordinateOpsData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  ops : TwoLayerEvalAlgebraOps d m
+  coordParam : Fin d -> TwoLayerParams d m
+  coord_spec :
+    ∀ i : Fin d, ∀ x : UnitCube d, ops.realizeC (coordParam i) x = x.1 i
+
+/--
 Natural final-input data for strict Theorem 42:
 users provide only the concrete two-layer realization map, constructive algebra ops,
 and a constructive point-separation operator.
@@ -893,6 +905,47 @@ noncomputable def TwoLayerStoneRouteEvalSeparationOpsData.toClosureData
     (A : TwoLayerStoneRouteEvalSeparationOpsData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toEvalConstructiveParamSepData.toClosureData
+
+/--
+Coordinate-driven ops imply constructive separation ops:
+pick a coordinate where two points differ and use its projection parameter.
+-/
+noncomputable def TwoLayerStoneRouteEvalCoordinateOpsData.toEvalSeparationOpsData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalCoordinateOpsData d m) :
+    TwoLayerStoneRouteEvalSeparationOpsData d m := by
+  classical
+  let sepParamFun : UnitCube d -> UnitCube d -> TwoLayerParams d m := fun x y =>
+    if hxy : x ≠ y then
+      let i : Fin d := Classical.choose (exists_coord_ne_of_ne_unitCube hxy)
+      A.coordParam i
+    else
+      A.ops.constParam 0
+  refine
+    { ops := A.ops
+      sepParam := sepParamFun
+      sep_spec := ?_ }
+  intro x y hxy
+  let i : Fin d := Classical.choose (exists_coord_ne_of_ne_unitCube hxy)
+  have hi : x.1 i ≠ y.1 i := Classical.choose_spec (exists_coord_ne_of_ne_unitCube hxy)
+  have hSepDef : sepParamFun x y = A.coordParam i := by
+    simp [sepParamFun, hxy, i]
+  have hx : A.ops.realizeC (sepParamFun x y) x = x.1 i := by
+    calc
+      A.ops.realizeC (sepParamFun x y) x = A.ops.realizeC (A.coordParam i) x := by
+        simpa [hSepDef]
+      _ = x.1 i := A.coord_spec i x
+  have hy : A.ops.realizeC (sepParamFun x y) y = y.1 i := by
+    calc
+      A.ops.realizeC (sepParamFun x y) y = A.ops.realizeC (A.coordParam i) y := by
+        simpa [hSepDef]
+      _ = y.1 i := A.coord_spec i y
+  intro hEq
+  apply hi
+  calc
+    x.1 i = A.ops.realizeC (sepParamFun x y) x := hx.symm
+    _ = A.ops.realizeC (sepParamFun x y) y := hEq
+    _ = y.1 i := hy
 
 /--
 Constructive separation-operator witness can be promoted directly to the natural

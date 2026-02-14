@@ -159,6 +159,18 @@ theorem theorem42_strict_final_natural_of_eval_separation_ops
   exact theorem42_strict_final (A := A.toNaturalData.toClosureData) fStar hε
 
 /--
+Natural-entry wrapper from coordinate-driven eval ops:
+users provide coordinate projection parameters; separation is synthesized automatically.
+-/
+theorem theorem42_strict_final_natural_of_eval_coordinate_ops
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalCoordinateOpsData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.ops.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final_natural_of_eval_separation_ops
+    (A := A.toEvalSeparationOpsData) fStar hε
+
+/--
 Natural final entrypoint for strict Theorem 42:
 inputs are only concrete two-layer constructive operators and point-separation constructor.
 -/

@@ -27,7 +27,9 @@ namespace Paper.BlindTests
 #check TwoLayerEvalAlgebraOps
 #check TwoLayerStoneRouteEvalConstructiveParamSepData
 #check TwoLayerStoneRouteEvalSeparationOpsData
+#check TwoLayerStoneRouteEvalCoordinateOpsData
 #check TwoLayerStoneRouteEvalSeparationOpsData.toNaturalData
+#check TwoLayerStoneRouteEvalCoordinateOpsData.toEvalSeparationOpsData
 #check TwoLayerTheorem42NaturalData
 #check TwoLayerTheorem42NaturalLocalData
 #check TwoLayerTheorem42SurjectiveData
@@ -45,6 +47,7 @@ namespace Paper.BlindTests
 #check theorem42_strict_final_of_eval_constructive_param_sep
 #check theorem42_strict_final_of_eval_separation_ops
 #check theorem42_strict_final_natural_of_eval_separation_ops
+#check theorem42_strict_final_natural_of_eval_coordinate_ops
 #check theorem42_strict_final_natural
 #check theorem42_strict_final_natural_formula
 #check theorem42_strict_final_natural_local
