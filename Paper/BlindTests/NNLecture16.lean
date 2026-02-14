@@ -573,6 +573,32 @@ structure FiniteClassConcentrationData
   hTailLe : ∀ h : H, tail h ≤ δ
 
 /--
+Sample-level concentration template for finite hypothesis classes.
+This records empirical-process metadata (`nSamples`) together with
+per-hypothesis concentration outputs (`tail`, `δ`).
+-/
+structure SampleConcentrationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] where
+  μ : Measure Ω
+  bad : H -> Set Ω
+  nSamples : Nat
+  tail : H -> ENNReal
+  δ : ENNReal
+  hConc : ∀ h : H, μ (bad h) ≤ tail h
+  hTailLe : ∀ h : H, tail h ≤ δ
+
+/-- Forget sample metadata and recover the generic concentration bundle. -/
+def SampleConcentrationData.toFiniteClassConcentrationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    (S : SampleConcentrationData (Ω := Ω) (H := H)) :
+    FiniteClassConcentrationData (H := H) S.μ where
+  bad := S.bad
+  tail := S.tail
+  δ := S.δ
+  hConc := S.hConc
+  hTailLe := S.hTailLe
+
+/--
 Packaged standard activation assumptions:
 `act 0 = 0` and 1-Lipschitz in mathlib's `LipschitzWith` sense.
 -/
@@ -1066,6 +1092,31 @@ theorem theorem43_with_pac_from_concentration_natural_scale_activationData
     hB2 hB2'Half hC2 hm AAct.toOneLipschitzAtZero hW hX
 
 /--
+Theorem 43 + PAC from sample-level concentration data (non-data endpoint).
+-/
+theorem theorem43_with_pac_from_sample_concentration_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (S : SampleConcentrationData (Ω := Ω) (H := H))
+    (m d : Nat) (hn : 0 < S.nSamples)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) S.nSamples)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin S.nSamples, ‖x i‖ ≤ C2 / Real.sqrt (S.nSamples : Real)) :
+    radStd S.nSamples (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (S.nSamples : Real))
+    ∧ S.μ (⋃ h : H, S.bad h) ≤ (Fintype.card H : ENNReal) * S.δ := by
+  exact theorem43_with_pac_from_concentration_bundle_natural_scale_activationData
+    (μ := S.μ) (C := S.toFiniteClassConcentrationData)
+    (n := S.nSamples) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x)
+    (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm AAct hW hX
+
+/--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from theorem inputs.
 -/
@@ -1245,5 +1296,26 @@ theorem theorem43_with_pac_from_concentration_data_natural_scale_activationData
     (n := n) (m := m) (d := d) (hn := hn)
     (D := D) (act := act) (B2' := B2')
     hB2'Half hm AAct.hActZero AAct.hLip
+
+/--
+Theorem 43 + PAC from sample-level concentration data (data endpoint).
+-/
+theorem theorem43_with_pac_from_sample_concentration_data_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (S : SampleConcentrationData (Ω := Ω) (H := H))
+    (m d : Nat) (hn : 0 < S.nSamples)
+    (D : LinearClassData H d S.nSamples)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd S.nSamples (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (S.nSamples : Real))
+    ∧ S.μ (⋃ h : H, S.bad h) ≤ (Fintype.card H : ENNReal) * S.δ := by
+  exact theorem43_with_pac_from_concentration_data_bundle_natural_scale_activationData
+    (μ := S.μ) (C := S.toFiniteClassConcentrationData)
+    (n := S.nSamples) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm AAct
 
 end Paper.BlindTests
