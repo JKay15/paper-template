@@ -186,6 +186,51 @@ private lemma radAbs_le_of_sample_bound
     _ = M := by
           simp [Finset.sum_const]
 
+/-- One-Lipschitz-at-zero implies `|act z| ≤ |z|`. -/
+private lemma act_abs_le_of_oneLipschitzAtZero
+    (act : Real -> Real)
+    (hLip0 : OneLipschitzAtZero act) :
+    ∀ z : Real, |act z| ≤ |z| := by
+  intro z
+  rcases hLip0 with ⟨h0, hLip⟩
+  have h := hLip z 0
+  simpa [h0] using h
+
+/-- If `|act z| ≤ |z|`, then any scale `L ≥ 1` gives `|act z| ≤ L*|z|`. -/
+private lemma act_abs_le_scaled
+    (act : Real -> Real)
+    (hAct1 : ∀ z : Real, |act z| ≤ |z|)
+    (L : Real) (hL : 1 ≤ L) :
+    ∀ z : Real, |act z| ≤ L * |z| := by
+  intro z
+  have hz : 0 ≤ |z| := abs_nonneg z
+  calc
+    |act z| ≤ |z| := hAct1 z
+    _ ≤ L * |z| := by nlinarith
+
+/-- Pointwise bound for linear predictors from norm bounds on weights and samples. -/
+private lemma pointwise_linear_bound_of_norm_bounds
+    {H : Type*}
+    {d n : Nat}
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (B2 C2 : Real) (hB2 : 0 ≤ B2)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    ∀ h : H, ∀ i : Fin n,
+      |(fun h t => inner ℝ (w h) t) h (x i)| ≤ B2 * C2 / Real.sqrt (n : Real) := by
+  intro h i
+  have hInner : |inner ℝ (w h) (x i)| ≤ ‖w h‖ * ‖x i‖ :=
+    abs_real_inner_le_norm (w h) (x i)
+  have hStep1 : ‖w h‖ * ‖x i‖ ≤ B2 * ‖x i‖ := by
+    exact mul_le_mul_of_nonneg_right (hW h) (norm_nonneg _)
+  have hStep2 : B2 * ‖x i‖ ≤ B2 * (C2 / Real.sqrt (n : Real)) := by
+    exact mul_le_mul_of_nonneg_left (hX i) hB2
+  have hStep3 :
+      B2 * (C2 / Real.sqrt (n : Real)) ≤ B2 * C2 / Real.sqrt (n : Real) := by
+    simp [div_eq_mul_inv, mul_assoc]
+  exact (hInner.trans hStep1).trans (hStep2.trans hStep3)
+
 /--
 Theorem 43 (de-assumed version):
 derive the final bound from pointwise sample control + activation growth control,
@@ -227,6 +272,40 @@ theorem theorem43_rademacher_complexity_upper_bound_deassumed
       radStd n (fun h t => act (F h t)) x ≤ radAbs n (fun h t => act (F h t)) x :=
     radStd_le_radAbs n (fun h t => act (F h t)) x
   simpa [L, Base, mul_assoc, mul_left_comm, mul_comm] using hStdToAbs.trans hAbsBound
+
+/--
+Theorem 43 (further de-assumed):
+derive bounds from
+1) one-Lipschitz-at-zero activation (plus scale lower bound),
+2) linear predictor norm controls (`‖w_h‖` and `‖x_i‖`).
+-/
+theorem theorem43_rademacher_linear_from_norm_bounds
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2' : 0 ≤ B2') (hC2 : 0 ≤ C2)
+    (hLip0 : OneLipschitzAtZero act)
+    (hScale : 1 ≤ 2 * B2' * Real.sqrt (m : Real))
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real)) := by
+  have hActBase : ∀ z : Real, |act z| ≤ |z| :=
+    act_abs_le_of_oneLipschitzAtZero act hLip0
+  have hActGrowth :
+      ∀ z : Real, |act z| ≤ (2 * B2' * Real.sqrt (m : Real)) * |z| :=
+    act_abs_le_scaled act hActBase (2 * B2' * Real.sqrt (m : Real)) hScale
+  have hPointwise :
+      ∀ h : H, ∀ i : Fin n,
+        |(fun h t => inner ℝ (w h) t) h (x i)| ≤ B2 * C2 / Real.sqrt (n : Real) :=
+    pointwise_linear_bound_of_norm_bounds w x B2 C2 hB2 hW hX
+  exact theorem43_rademacher_complexity_upper_bound_deassumed
+    (n := n) (m := m) (hn := hn)
+    (F := fun h t => inner ℝ (w h) t) (x := x)
+    (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2' hC2 hActGrowth hPointwise
 
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
