@@ -103,6 +103,131 @@ theorem theorem43_rademacher_complexity_upper_bound
     hStdToAbs.trans hContract
   exact hPipe.trans (mul_le_mul_of_nonneg_left hSingleUnit hCoeffNonneg)
 
+/-- Pointwise sample bound implies a bound on a signed average. -/
+private lemma signedAverage_abs_le_of_sample_bound
+    {X : Type*} {n : Nat} (hn : 0 < n)
+    (f : X -> Real) (x : Sample X n) (σ : SignVector n)
+    (M : Real)
+    (hfx : ∀ i : Fin n, |f (x i)| ≤ M) :
+    |signedAverage n x f σ| ≤ M := by
+  have hnR : 0 < (n : Real) := by exact_mod_cast hn
+  have hcoef_nonneg : 0 ≤ (1 / (n : Real)) := by positivity
+  have hsumAbs :
+      |∑ i : Fin n, rademacherSign (σ i) * f (x i)| ≤
+        ∑ i : Fin n, |rademacherSign (σ i) * f (x i)| := by
+    exact Finset.abs_sum_le_sum_abs _ _
+  have hterm :
+      ∀ i : Fin n, |rademacherSign (σ i) * f (x i)| ≤ M := by
+    intro i
+    calc
+      |rademacherSign (σ i) * f (x i)| = |rademacherSign (σ i)| * |f (x i)| := by
+        simp [abs_mul]
+      _ = |f (x i)| := by simp [MLTheory.Core.Learning.abs_rademacherSign]
+      _ ≤ M := hfx i
+  have hsumBound :
+      ∑ i : Fin n, |rademacherSign (σ i) * f (x i)| ≤
+        ∑ i : Fin n, M :=
+    Finset.sum_le_sum (fun i _ => hterm i)
+  have hsumBound' :
+      ∑ i : Fin n, |rademacherSign (σ i) * f (x i)| ≤ (n : Real) * M := by
+    simpa using hsumBound
+  calc
+    |signedAverage n x f σ|
+        = |(1 / (n : Real)) * ∑ i : Fin n, rademacherSign (σ i) * f (x i)| := by
+            rfl
+    _ = (1 / (n : Real)) * |∑ i : Fin n, rademacherSign (σ i) * f (x i)| := by
+          simp [abs_mul]
+    _ ≤ (1 / (n : Real)) * ((n : Real) * M) := by
+          exact mul_le_mul_of_nonneg_left (hsumAbs.trans hsumBound') hcoef_nonneg
+    _ = M := by
+          have hnNe : (n : Real) ≠ 0 := by exact ne_of_gt hnR
+          field_simp [hnNe, mul_assoc]
+
+/-- Pointwise sample bound implies empirical absolute Rademacher bound. -/
+private lemma empiricalRadAbs_le_of_sample_bound
+    {H X : Type*} [Fintype H] [Nonempty H]
+    {n : Nat} (hn : 0 < n)
+    (F : HypothesisClass H X) (x : Sample X n) (σ : SignVector n)
+    (M : Real)
+    (hPointwise : ∀ h : H, ∀ i : Fin n, |F h (x i)| ≤ M) :
+    empiricalRadAbs n F x σ ≤ M := by
+  classical
+  unfold empiricalRadAbs
+  exact Finset.sup'_le
+    (s := Finset.univ)
+    (f := fun h : H => |signedAverage n x (F h) σ|)
+    Finset.univ_nonempty
+    (by
+      intro h hh
+      exact signedAverage_abs_le_of_sample_bound (hn := hn) (f := F h) (x := x) (σ := σ)
+        (M := M) (hPointwise h))
+
+/-- Pointwise sample bound implies absolute Rademacher bound. -/
+private lemma radAbs_le_of_sample_bound
+    {H X : Type*} [Fintype H] [Nonempty H]
+    {n : Nat} (hn : 0 < n)
+    (F : HypothesisClass H X) (x : Sample X n)
+    (M : Real)
+    (hPointwise : ∀ h : H, ∀ i : Fin n, |F h (x i)| ≤ M) :
+    radAbs n F x ≤ M := by
+  unfold radAbs
+  have hcoef_nonneg : 0 ≤ (1 / (Fintype.card (SignVector n) : Real)) := by positivity
+  have hsum_le :
+      ∑ σ : SignVector n, empiricalRadAbs n F x σ ≤ ∑ _σ : SignVector n, M :=
+    Finset.sum_le_sum (fun σ _ =>
+      empiricalRadAbs_le_of_sample_bound (hn := hn) (F := F) (x := x) (σ := σ)
+        (M := M) hPointwise)
+  calc
+    (1 / (Fintype.card (SignVector n) : Real)) *
+        ∑ σ : SignVector n, empiricalRadAbs n F x σ
+      ≤ (1 / (Fintype.card (SignVector n) : Real)) *
+        ∑ _σ : SignVector n, M := by
+          exact mul_le_mul_of_nonneg_left hsum_le hcoef_nonneg
+    _ = M := by
+          simp [Finset.sum_const]
+
+/--
+Theorem 43 (de-assumed version):
+derive the final bound from pointwise sample control + activation growth control,
+without directly assuming `hSingleUnit` / `hContractAbs`.
+-/
+theorem theorem43_rademacher_complexity_upper_bound_deassumed
+    {H X : Type*} [Fintype H] [Nonempty H]
+    (n m : Nat) (hn : 0 < n)
+    (F : HypothesisClass H X) (x : Sample X n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2' : 0 ≤ B2') (hC2 : 0 ≤ C2)
+    (hActGrowth :
+      ∀ z : Real, |act z| ≤ (2 * B2' * Real.sqrt (m : Real)) * |z|)
+    (hPointwise :
+      ∀ h : H, ∀ i : Fin n, |F h (x i)| ≤ B2 * C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (F h t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real)) := by
+  let L : Real := 2 * B2' * Real.sqrt (m : Real)
+  let Base : Real := B2 * C2 / Real.sqrt (n : Real)
+  have hL_nonneg : 0 ≤ L := by
+    unfold L
+    have h2B_nonneg : 0 ≤ 2 * B2' := by nlinarith
+    exact mul_nonneg h2B_nonneg (Real.sqrt_nonneg (m : Real))
+  have hBase_nonneg : 0 ≤ Base := by
+    unfold Base
+    exact div_nonneg (mul_nonneg hB2 hC2) (Real.sqrt_nonneg (n : Real))
+  have hPointwiseAct :
+      ∀ h : H, ∀ i : Fin n, |(fun h t => act (F h t)) h (x i)| ≤ L * Base := by
+    intro h i
+    have hGrowth := hActGrowth (F h (x i))
+    have hBaseVal := hPointwise h i
+    have hMul := mul_le_mul_of_nonneg_left hBaseVal hL_nonneg
+    simpa [L, Base, abs_mul, mul_assoc, mul_left_comm, mul_comm] using hGrowth.trans hMul
+  have hAbsBound :
+      radAbs n (fun h t => act (F h t)) x ≤ L * Base :=
+    radAbs_le_of_sample_bound (hn := hn) (F := fun h t => act (F h t)) (x := x)
+      (M := L * Base) hPointwiseAct
+  have hStdToAbs :
+      radStd n (fun h t => act (F h t)) x ≤ radAbs n (fun h t => act (F h t)) x :=
+    radStd_le_radAbs n (fun h t => act (F h t)) x
+  simpa [L, Base, mul_assoc, mul_left_comm, mul_comm] using hStdToAbs.trans hAbsBound
+
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
     {H X : Type*} [Fintype H] [Nonempty H]
@@ -170,6 +295,33 @@ theorem theorem43_with_pac_concentration
   · exact theorem43_rademacher_complexity_upper_bound
       (n := n) (m := m) (F := F) (x := x) (act := act)
       (B2 := B2) (B2' := B2') (C2 := C2) hB2' hSingleUnit hContractAbs
+  · exact pac_badEvent_uniform_bound μ bad δ hTail
+
+/--
+Theorem 43 + PAC (de-assumed):
+uses pointwise sample control and activation growth control directly,
+then appends the finite-class PAC union bound.
+-/
+theorem theorem43_with_pac_concentration_deassumed
+    {Ω H X : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ)
+    (n m : Nat) (hn : 0 < n)
+    (F : HypothesisClass H X) (x : Sample X n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2' : 0 ≤ B2') (hC2 : 0 ≤ C2)
+    (hActGrowth :
+      ∀ z : Real, |act z| ≤ (2 * B2' * Real.sqrt (m : Real)) * |z|)
+    (hPointwise :
+      ∀ h : H, ∀ i : Fin n, |F h (x i)| ≤ B2 * C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (F h t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  constructor
+  · exact theorem43_rademacher_complexity_upper_bound_deassumed
+      (n := n) (m := m) (hn := hn) (F := F) (x := x) (act := act)
+      (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2' hC2 hActGrowth hPointwise
   · exact pac_badEvent_uniform_bound μ bad δ hTail
 
 end Paper.BlindTests
