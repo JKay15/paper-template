@@ -3,8 +3,8 @@
 本文件是 `paper-template` 的仓库级执行规范，用于确保 Codex 在三仓协同下稳定工作。
 
 ## 1. 文件命名约定（避免歧义）
-1. 主规范文件名使用 `AGENTS.md`。
-2. `AGENT.md` 仅作为兼容入口，内容应指向本文件。
+1. 本仓库仅使用 `AGENTS.md` 作为代理规范入口。
+2. 不再维护 `AGENT.md` 兼容入口文件。
 
 ## 2. skills 发现与初始化
 1. repo-scope skills 固定路径：
