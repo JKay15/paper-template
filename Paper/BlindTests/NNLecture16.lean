@@ -428,6 +428,21 @@ private lemma act_abs_le_of_oneLipschitzAtZero
   have h := hLip z 0
   simpa [h0] using h
 
+/--
+Bridge from mathlib's standard Lipschitz assumption to the local
+`OneLipschitzAtZero` interface used by the theorem chain.
+-/
+private lemma oneLipschitzAtZero_of_lipschitzWith_one
+    (act : Real -> Real)
+    (h0 : act 0 = 0)
+    (hLip : LipschitzWith (1 : NNReal) act) :
+    OneLipschitzAtZero act := by
+  refine ⟨h0, ?_⟩
+  intro a b
+  have hdist : dist (act a) (act b) ≤ (1 : NNReal) * dist a b :=
+    (lipschitzWith_iff_dist_le_mul.mp hLip) a b
+  simpa [Real.dist_eq, NNReal.coe_one] using hdist
+
 /-- If `|act z| ≤ |z|`, then any scale `L ≥ 1` gives `|act z| ≤ L*|z|`. -/
 private lemma act_abs_le_scaled
     (act : Real -> Real)
@@ -633,6 +648,28 @@ theorem theorem43_rademacher_linear_from_data_natural_scale
     (w := D.w) (x := D.x) (act := act)
     (B2 := D.B2) (B2' := B2') (C2 := D.C2)
     D.hB2 hB2'Half D.hC2 hm hLip0 D.hW D.hX
+
+/--
+Theorem 43 natural-scale variant using mathlib's `LipschitzWith` assumption.
+This avoids directly requiring the custom `OneLipschitzAtZero` predicate.
+-/
+theorem theorem43_rademacher_linear_from_data_natural_scale_lipschitzWith
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (hActZero : act 0 = 0)
+    (hLip : LipschitzWith (1 : NNReal) act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real)) := by
+  have hLip0 : OneLipschitzAtZero act :=
+    oneLipschitzAtZero_of_lipschitzWith_one act hActZero hLip
+  exact theorem43_rademacher_linear_from_data_natural_scale
+    (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm hLip0
 
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
@@ -852,6 +889,29 @@ theorem theorem43_with_pac_from_concentration_data_bundle_natural_scale
       _ ≤ ∑ h : H, C.δ :=
         Finset.sum_le_sum (fun h _ => C.hTailLe h)
       _ = (Fintype.card H : ENNReal) * C.δ := by simp
+
+/--
+Theorem 43 + PAC (bundle form) using mathlib `LipschitzWith`.
+-/
+theorem theorem43_with_pac_from_concentration_data_bundle_natural_scale_lipschitzWith
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (C : FiniteClassConcentrationData (H := H) μ)
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (hActZero : act 0 = 0)
+    (hLip : LipschitzWith (1 : NNReal) act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, C.bad h) ≤ (Fintype.card H : ENNReal) * C.δ := by
+  have hLip0 : OneLipschitzAtZero act :=
+    oneLipschitzAtZero_of_lipschitzWith_one act hActZero hLip
+  exact theorem43_with_pac_from_concentration_data_bundle_natural_scale
+    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm hLip0
 
 /--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
