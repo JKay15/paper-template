@@ -218,6 +218,31 @@ structure TwoLayerStoneRouteAlgebraicGeneratorParamSepData
     ∀ x y : UnitCube d, x ≠ y ->
       ∃ p : TwoLayerParams d m, ops.realizeC p x ≠ ops.realizeC p y
 
+/--
+Existential version of algebraic-generator assumptions:
+users provide only existence of parameters for constants/addition/multiplication,
+and the concrete algebra operations are selected noncomputably.
+-/
+structure TwoLayerStoneRouteAlgebraicExistsParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, realizeC p x ≠ realizeC p y
+  hConstExists :
+    ∀ c : Real,
+      ∃ p : TwoLayerParams d m, realizeC p = algebraMap ℝ C(UnitCube d, Real) c
+  hAddExists :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p + realizeC q
+  hMulExists :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p * realizeC q
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -400,6 +425,39 @@ def TwoLayerStoneRouteAlgebraicGeneratorParamSepData.toAlgebraClosedParamSepData
     intro p q
     exact ⟨A.ops.mulParam p q, A.ops.realize_mul p q⟩
 
+/--
+Build structured algebra operations from existential assumptions by choice.
+-/
+noncomputable def TwoLayerStoneRouteAlgebraicExistsParamSepData.toAlgebraOps
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicExistsParamSepData d m) :
+    TwoLayerRealizationAlgebraOps d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  constParam := fun c => Classical.choose (A.hConstExists c)
+  addParam := fun p q => Classical.choose (A.hAddExists p q)
+  mulParam := fun p q => Classical.choose (A.hMulExists p q)
+  realize_const := by
+    intro c
+    exact Classical.choose_spec (A.hConstExists c)
+  realize_add := by
+    intro p q
+    exact Classical.choose_spec (A.hAddExists p q)
+  realize_mul := by
+    intro p q
+    exact Classical.choose_spec (A.hMulExists p q)
+
+/--
+Existential algebraic assumptions imply structured algebraic-generator witness.
+-/
+noncomputable def TwoLayerStoneRouteAlgebraicExistsParamSepData.toAlgebraicGeneratorParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicExistsParamSepData d m) :
+    TwoLayerStoneRouteAlgebraicGeneratorParamSepData d m where
+  ops := A.toAlgebraOps
+  hSepParam := A.hSepParam
+
 /-- Parameter-separation algebra-closed witness implies closure-level witness. -/
 def TwoLayerStoneRouteAlgebraClosedParamSepData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -415,6 +473,13 @@ def TwoLayerStoneRouteAlgebraicGeneratorParamSepData.toClosureData
     (A : TwoLayerStoneRouteAlgebraicGeneratorParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toAlgebraClosedParamSepData.toClosureData
+
+/-- Existential algebraic assumptions imply closure-level Stone witness. -/
+noncomputable def TwoLayerStoneRouteAlgebraicExistsParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicExistsParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toAlgebraicGeneratorParamSepData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData
