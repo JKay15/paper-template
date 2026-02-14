@@ -194,6 +194,26 @@ noncomputable def twoLayerUniversalApproxAlgorithm_of_denseRange
   approx := (universalApproxAlgorithm_of_denseRange realizeC hDense).approx
   spec := (universalApproxAlgorithm_of_denseRange realizeC hDense).spec
 
+/--
+Packaged dense two-layer realization data:
+formula link (`realize_eq`) + dense-range hypothesis (`hDense`).
+-/
+structure TwoLayerDenseRealization (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hDense : DenseRange realizeC
+
+/-- Convert packaged dense two-layer realization data to an explicit approximation algorithm. -/
+noncomputable def TwoLayerDenseRealization.toAlgorithm
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m) :
+    TwoLayerUniversalApproxAlgorithm d m :=
+  twoLayerUniversalApproxAlgorithm_of_denseRange
+    (d := d) (m := m) A.act A.realizeC A.realize_eq A.hDense
+
 /-- Theorem 42 specialized to the unit-cube domain. -/
 theorem theorem42_on_unit_cube
     {d : Nat} {Θ : Type*}
@@ -267,6 +287,21 @@ theorem theorem42_on_unit_cube_from_twoLayer_denseRange
   · exact A.spec fStar ε hε
   · intro x
     exact A.realize_eq (A.approx fStar ε) x
+
+/--
+Theorem 42 on unit cube from packaged dense two-layer realization data.
+This keeps theorem inputs compact while preserving explicit formula witnesses.
+-/
+theorem theorem42_on_unit_cube_from_twoLayer_denseFamily
+    {d m : Nat}
+    [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
+  exact theorem42_on_unit_cube_from_twoLayer_denseRange
+    (d := d) (m := m) A.act A.realizeC A.realize_eq A.hDense fStar hε
 
 /--
 Theorem 43 (Rademacher upper bound, abstract form):
