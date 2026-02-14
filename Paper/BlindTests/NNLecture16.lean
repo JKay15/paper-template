@@ -671,6 +671,48 @@ noncomputable def SampleConcentrationData.ofSubgaussianFamily
     rfl
 
 /--
+Packaged bounded mean-zero sample-family assumptions used to derive
+subgaussian hypotheses via Hoeffding's lemma.
+-/
+structure BoundedMeanZeroSampleFamilyData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    (μ : Measure Ω) where
+  nSamples : Nat
+  X : H -> Nat -> Ω -> Real
+  a : Real
+  b : Real
+  hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ
+  hMeas : ∀ h : H, ∀ i : Nat, AEMeasurable (X h i) μ
+  hMemIcc : ∀ h : H, ∀ i : Nat, ∀ᵐ ω ∂μ, X h i ω ∈ Set.Icc a b
+  hMeanZero : ∀ h : H, ∀ i : Nat, ∫ ω, X h i ω ∂μ = 0
+
+namespace BoundedMeanZeroSampleFamilyData
+
+/-- Hoeffding-scale subgaussian parameter induced by interval bounds `[a, b]`. -/
+noncomputable def subgaussianParam
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    {μ : Measure Ω}
+    (S : BoundedMeanZeroSampleFamilyData (H := H) μ) : NNReal :=
+  ((‖S.b - S.a‖₊ / 2) ^ 2)
+
+/--
+Automatic subgaussian family generated from bundled bounded mean-zero assumptions.
+-/
+lemma hasSubgaussianMGF
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    {μ : Measure Ω} [IsProbabilityMeasure μ]
+    (S : BoundedMeanZeroSampleFamilyData (H := H) μ) :
+    ∀ h : H, ∀ i < S.nSamples,
+      ProbabilityTheory.HasSubgaussianMGF (S.X h i) S.subgaussianParam μ := by
+  intro h i hi
+  simpa [BoundedMeanZeroSampleFamilyData.subgaussianParam] using
+    (ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero
+      (X := S.X h i) (μ := μ) (a := S.a) (b := S.b)
+      (hm := S.hMeas h i) (hb := S.hMemIcc h i) (hc := S.hMeanZero h i))
+
+end BoundedMeanZeroSampleFamilyData
+
+/--
 Packaged standard activation assumptions:
 `act 0 = 0` and 1-Lipschitz in mathlib's `LipschitzWith` sense.
 -/
@@ -1375,6 +1417,77 @@ theorem theorem43_with_pac_from_bounded_zeroMean_sample_data_natural_scale_activ
       (μ := μ) (n := n)
       (X := X) (c := cBound) (ε := ε) hε
       hIndep hSubG
+      (m := m) (d := d) (hn := hn)
+      (D := D)
+      (act := act) (B2' := B2')
+      hB2'Half hm AAct
+
+/--
+Bundle endpoint for theorem43 + PAC under bounded, mean-zero sample assumptions
+(non-data linear-class form).
+-/
+theorem theorem43_with_pac_from_bounded_family_bundle_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (S : BoundedMeanZeroSampleFamilyData (H := H) μ)
+    (ε : Real) (hε : 0 ≤ ε)
+    (m d : Nat) (hn : 0 < S.nSamples)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) S.nSamples)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin S.nSamples, ‖x i‖ ≤ C2 / Real.sqrt (S.nSamples : Real)) :
+    radStd S.nSamples (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (S.nSamples : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range S.nSamples, S.X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal
+          (Real.exp
+            (-(ε ^ 2) /
+              (2 * (S.nSamples : Real) *
+                ((BoundedMeanZeroSampleFamilyData.subgaussianParam S : NNReal) : Real)))) := by
+  simpa [BoundedMeanZeroSampleFamilyData.subgaussianParam] using
+    theorem43_with_pac_from_subgaussian_sample_natural_scale_activationData
+      (μ := μ) (n := S.nSamples)
+      (X := S.X) (c := S.subgaussianParam) (ε := ε) hε
+      S.hIndep S.hasSubgaussianMGF
+      (m := m) (d := d) (hn := hn)
+      (w := w) (x := x)
+      (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm AAct hW hX
+
+/--
+Bundle endpoint for theorem43 + PAC under bounded, mean-zero sample assumptions
+(packaged linear-class data form).
+-/
+theorem theorem43_with_pac_from_bounded_family_data_bundle_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (S : BoundedMeanZeroSampleFamilyData (H := H) μ)
+    (ε : Real) (hε : 0 ≤ ε)
+    (m d : Nat) (hn : 0 < S.nSamples)
+    (D : LinearClassData H d S.nSamples)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd S.nSamples (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (S.nSamples : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range S.nSamples, S.X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal
+          (Real.exp
+            (-(ε ^ 2) /
+              (2 * (S.nSamples : Real) *
+                ((BoundedMeanZeroSampleFamilyData.subgaussianParam S : NNReal) : Real)))) := by
+  simpa [BoundedMeanZeroSampleFamilyData.subgaussianParam] using
+    theorem43_with_pac_from_subgaussian_sample_data_natural_scale_activationData
+      (μ := μ) (n := S.nSamples)
+      (X := S.X) (c := S.subgaussianParam) (ε := ε) hε
+      S.hIndep S.hasSubgaussianMGF
       (m := m) (d := d) (hn := hn)
       (D := D)
       (act := act) (B2' := B2')
