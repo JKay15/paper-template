@@ -48,6 +48,17 @@ theorem theorem42_strict_final_of_primitive
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Compatibility wrapper: generated witnesses (using `adjoin (range realizeC)`) can be
+automatically lowered to closure-level witnesses and fed into `theorem42_strict_final`.
+-/
+theorem theorem42_strict_final_of_generated
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteGeneratedData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/

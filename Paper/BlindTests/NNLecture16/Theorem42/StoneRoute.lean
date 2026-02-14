@@ -62,6 +62,45 @@ structure TwoLayerStoneRoutePrimitiveData (d m : Nat) [CompactSpace (UnitCube d)
   hDenseInWitness :
     DenseRange (fun p : TwoLayerParams d m => (⟨realizeC p, hRangeInWitness p⟩ : witnessAlg))
 
+/--
+If the raw two-layer family separates points, then the subalgebra adjoined by that
+family also separates points.
+-/
+theorem adjoin_separatesPoints_of_range
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (realizeC : TwoLayerParams d m -> C(UnitCube d, Real))
+    (hSepRange :
+      Set.SeparatesPoints
+        ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' (Set.range realizeC))) :
+    (Algebra.adjoin ℝ (Set.range realizeC)).SeparatesPoints := by
+  intro x y hxy
+  obtain ⟨f, hf, hneq⟩ := hSepRange hxy
+  rcases hf with ⟨g, hg, rfl⟩
+  rcases hg with ⟨p, rfl⟩
+  refine ⟨(realizeC p : UnitCube d -> Real), ?_, hneq⟩
+  refine ⟨realizeC p, ?_, rfl⟩
+  exact Algebra.subset_adjoin ⟨p, rfl⟩
+
+/--
+Generated Stone-route witness:
+`witnessAlg` is fixed to `adjoin (range realizeC)`.
+Users provide only range-level separation and density in this adjoin space.
+-/
+structure TwoLayerStoneRouteGeneratedData (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepRange :
+    Set.SeparatesPoints
+      ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' (Set.range realizeC))
+  hDenseInAdjoin :
+    DenseRange
+      (fun p : TwoLayerParams d m =>
+        (⟨realizeC p, Algebra.subset_adjoin (s := Set.range realizeC) ⟨p, rfl⟩⟩ :
+          Algebra.adjoin ℝ (Set.range realizeC)))
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -109,6 +148,31 @@ def TwoLayerStoneRoutePrimitiveData.toClosureData
       simpa [dist_comm] using hpDistSubtype
     refine ⟨A.realizeC p, ?_, hpDist⟩
     exact ⟨p, rfl⟩
+
+/--
+Generated witness implies primitive witness by instantiating
+`witnessAlg := adjoin (range realizeC)` and deriving separation automatically.
+-/
+def TwoLayerStoneRouteGeneratedData.toPrimitiveData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteGeneratedData d m) :
+    TwoLayerStoneRoutePrimitiveData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  witnessAlg := Algebra.adjoin ℝ (Set.range A.realizeC)
+  hSep := adjoin_separatesPoints_of_range A.realizeC A.hSepRange
+  hRangeInWitness := by
+    intro p
+    exact Algebra.subset_adjoin ⟨p, rfl⟩
+  hDenseInWitness := A.hDenseInAdjoin
+
+/-- Generated witness implies closure-level witness by chaining previous adapters. -/
+def TwoLayerStoneRouteGeneratedData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteGeneratedData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toPrimitiveData.toClosureData
 
 /--
 Epsilon-level approximation obtained by Stone-Weierstrass on the witness algebra,
