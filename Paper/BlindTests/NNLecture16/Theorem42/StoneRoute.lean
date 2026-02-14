@@ -187,6 +187,37 @@ structure TwoLayerStoneRouteAlgebraClosedParamSepData
     ∀ p q : TwoLayerParams d m,
       ∃ r : TwoLayerParams d m, realizeC r = realizeC p * realizeC q
 
+/--
+Structured algebra operations for a two-layer realization map.
+This replaces existential algebra-closure assumptions by explicit constructors.
+-/
+structure TwoLayerRealizationAlgebraOps
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  constParam : Real -> TwoLayerParams d m
+  addParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  mulParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  realize_const :
+    ∀ c : Real, realizeC (constParam c) = algebraMap ℝ C(UnitCube d, Real) c
+  realize_add :
+    ∀ p q : TwoLayerParams d m, realizeC (addParam p q) = realizeC p + realizeC q
+  realize_mul :
+    ∀ p q : TwoLayerParams d m, realizeC (mulParam p q) = realizeC p * realizeC q
+
+/--
+Param-separation witness built from structured algebra operations.
+-/
+structure TwoLayerStoneRouteAlgebraicGeneratorParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  ops : TwoLayerRealizationAlgebraOps d m
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, ops.realizeC p x ≠ ops.realizeC p y
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -348,12 +379,42 @@ def TwoLayerStoneRouteAlgebraClosedParamSepData.toAlgebraClosedData
   hAdd := A.hAdd
   hMul := A.hMul
 
+/--
+Structured algebraic-generator witness converts to algebra-closed param-separation witness.
+-/
+def TwoLayerStoneRouteAlgebraicGeneratorParamSepData.toAlgebraClosedParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicGeneratorParamSepData d m) :
+    TwoLayerStoneRouteAlgebraClosedParamSepData d m where
+  act := A.ops.act
+  realizeC := A.ops.realizeC
+  realize_eq := A.ops.realize_eq
+  hSepParam := A.hSepParam
+  hConst := by
+    intro c
+    exact ⟨A.ops.constParam c, A.ops.realize_const c⟩
+  hAdd := by
+    intro p q
+    exact ⟨A.ops.addParam p q, A.ops.realize_add p q⟩
+  hMul := by
+    intro p q
+    exact ⟨A.ops.mulParam p q, A.ops.realize_mul p q⟩
+
 /-- Parameter-separation algebra-closed witness implies closure-level witness. -/
 def TwoLayerStoneRouteAlgebraClosedParamSepData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
     (A : TwoLayerStoneRouteAlgebraClosedParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toAlgebraClosedData.toStoneRouteData.toClosureData
+
+/--
+Structured algebraic-generator witness implies closure-level witness.
+-/
+def TwoLayerStoneRouteAlgebraicGeneratorParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicGeneratorParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toAlgebraClosedParamSepData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData

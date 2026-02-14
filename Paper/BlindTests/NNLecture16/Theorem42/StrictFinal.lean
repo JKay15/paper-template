@@ -92,6 +92,18 @@ theorem theorem42_strict_final_of_algebra_closed_param_sep
   exact theorem42_strict_final_of_algebra_closed (A := A.toAlgebraClosedData) fStar hε
 
 /--
+Compatibility wrapper: structured algebraic-generator witness with parameter-level
+separation can be lowered automatically to strict-final route.
+-/
+theorem theorem42_strict_final_of_algebraic_generator_param_sep
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraicGeneratorParamSepData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.ops.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final_of_algebra_closed_param_sep
+    (A := A.toAlgebraClosedParamSepData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/
