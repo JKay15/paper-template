@@ -615,6 +615,61 @@ def SampleConcentrationData.ofUniformTail
   hConc := hTail
   hTailLe := by intro h; simp
 
+/-- Convert a real-valued measure bound to an `ENNReal` bound. -/
+private lemma measure_le_of_real_bound
+    {Ω : Type*} [MeasurableSpace Ω]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (s : Set Ω) (r : Real)
+    (hr0 : 0 ≤ r) (hr : μ.real s ≤ r) :
+    μ s ≤ ENNReal.ofReal r := by
+  have hne : μ s ≠ ⊤ := measure_ne_top μ s
+  have htr : (μ s).toReal ≤ r := by
+    simpa [Measure.real_def] using hr
+  exact (ENNReal.le_ofReal_iff_toReal_le hne hr0).2 htr
+
+/--
+Build sample-level concentration data from per-hypothesis subgaussian sum tails.
+The bad event for each `h` is:
+`{ω | ε ≤ ∑ i ∈ Finset.range nSamples, X h i ω}`.
+-/
+noncomputable def SampleConcentrationData.ofSubgaussianFamily
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (nSamples : Nat)
+    (X : H -> Nat -> Ω -> Real)
+    (c : NNReal) (ε : Real) (hε : 0 ≤ ε)
+    (hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ)
+    (hSubG :
+      ∀ h : H, ∀ i < nSamples, ProbabilityTheory.HasSubgaussianMGF (X h i) c μ) :
+    SampleConcentrationData (Ω := Ω) (H := H) := by
+  let tailReal : Real := Real.exp (-(ε ^ 2) / (2 * (nSamples : Real) * (c : Real)))
+  let tailENN : ENNReal := ENNReal.ofReal tailReal
+  refine
+    { μ := μ
+      bad := fun h => {ω | ε ≤ ∑ i ∈ Finset.range nSamples, X h i ω}
+      nSamples := nSamples
+      tail := fun _ => tailENN
+      δ := tailENN
+      hConc := ?_
+      hTailLe := ?_ }
+  · intro h
+    have hReal :
+        μ.real {ω | ε ≤ ∑ i ∈ Finset.range nSamples, X h i ω} ≤ tailReal := by
+      simpa [tailReal] using
+        (ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
+          (h_indep := hIndep h)
+          (c := c) (n := nSamples)
+          (h_subG := by
+            intro i hi
+            exact hSubG h i hi)
+          (ε := ε) hε)
+    have hNonneg : 0 ≤ tailReal := by
+      dsimp [tailReal]
+      positivity
+    exact measure_le_of_real_bound μ _ tailReal hNonneg hReal
+  · intro h
+    rfl
+
 /--
 Packaged standard activation assumptions:
 `act 0 = 0` and 1-Lipschitz in mathlib's `LipschitzWith` sense.
@@ -1157,6 +1212,40 @@ theorem theorem43_with_pac_from_uniform_tail_sample_natural_scale_activationData
   simpa [SampleConcentrationData.ofUniformTail] using
     theorem43_with_pac_from_sample_concentration_natural_scale_activationData
       (S := SampleConcentrationData.ofUniformTail μ bad n δ hTail)
+      (m := m) (d := d) (hn := hn)
+      (w := w) (x := x)
+      (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm AAct hW hX
+
+/--
+Theorem 43 + PAC from subgaussian family tails
+using `SampleConcentrationData.ofSubgaussianFamily` (non-data endpoint).
+-/
+theorem theorem43_with_pac_from_subgaussian_sample_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (n : Nat)
+    (X : H -> Nat -> Ω -> Real)
+    (c : NNReal) (ε : Real) (hε : 0 ≤ ε)
+    (hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ)
+    (hSubG : ∀ h : H, ∀ i < n, ProbabilityTheory.HasSubgaussianMGF (X h i) c μ)
+    (m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range n, X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal (Real.exp (-(ε ^ 2) / (2 * (n : Real) * (c : Real)))) := by
+  simpa [SampleConcentrationData.ofSubgaussianFamily] using
+    theorem43_with_pac_from_sample_concentration_natural_scale_activationData
+      (S := SampleConcentrationData.ofSubgaussianFamily μ n X c ε hε hIndep hSubG)
       (m := m) (d := d) (hn := hn)
       (w := w) (x := x)
       (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
