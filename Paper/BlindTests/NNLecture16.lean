@@ -687,6 +687,28 @@ theorem theorem43_rademacher_linear_from_norm_bounds_natural_scale
     hB2 hB2' hC2 hLip0 hScale hW hX
 
 /--
+Theorem 43 natural-scale variant with packaged standard activation assumptions.
+-/
+theorem theorem43_rademacher_linear_from_norm_bounds_natural_scale_activationData
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real)) := by
+  exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
+    (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x) (act := act)
+    (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm AAct.toOneLipschitzAtZero hW hX
+
+/--
 Theorem 43 natural-scale variant using packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from the theorem boundary.
 -/
@@ -871,6 +893,32 @@ theorem theorem43_with_pac_concentration_natural_scale
   · exact pac_badEvent_uniform_bound μ bad δ hTail
 
 /--
+Theorem 43 + PAC with natural scale assumptions and packaged standard activation assumptions.
+-/
+theorem theorem43_with_pac_concentration_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  exact theorem43_with_pac_concentration_natural_scale
+    (μ := μ) (bad := bad) (δ := δ) hTail
+    (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x)
+    (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm AAct.toOneLipschitzAtZero hW hX
+
+/--
 Theorem 43 + PAC from concentration premises (natural scale version):
 replace direct `hTail` with a two-step concentration assumption
 `μ(bad h) ≤ tail h ≤ δ`.
@@ -905,6 +953,30 @@ theorem theorem43_with_pac_from_concentration_bundle_natural_scale
         simp
 
 /--
+Theorem 43 + PAC from concentration (bundle form) with packaged standard activation assumptions.
+-/
+theorem theorem43_with_pac_from_concentration_bundle_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (C : FiniteClassConcentrationData (H := H) μ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, C.bad h) ≤ (Fintype.card H : ENNReal) * C.δ := by
+  exact theorem43_with_pac_from_concentration_bundle_natural_scale
+    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x)
+    (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm AAct.toOneLipschitzAtZero hW hX
+
+/--
 Theorem 43 + PAC from concentration premises (natural scale version):
 wrapper form with explicit `bad/tail/δ` arguments.
 -/
@@ -936,6 +1008,35 @@ theorem theorem43_with_pac_from_concentration_natural_scale
     (w := w) (x := x) (act := act)
     (B2 := B2) (B2' := B2') (C2 := C2)
     hB2 hB2'Half hC2 hm hLip0 hW hX
+
+/--
+Theorem 43 + PAC from concentration (explicit wrapper),
+with packaged standard activation assumptions.
+-/
+theorem theorem43_with_pac_from_concentration_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (tail : H -> ENNReal) (δ : ENNReal)
+    (hConc : ∀ h : H, μ (bad h) ≤ tail h)
+    (hTailLe : ∀ h : H, tail h ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  exact theorem43_with_pac_from_concentration_natural_scale
+    (μ := μ) (bad := bad) (tail := tail) (δ := δ)
+    hConc hTailLe
+    (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x)
+    (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm AAct.toOneLipschitzAtZero hW hX
 
 /--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
