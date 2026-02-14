@@ -101,6 +101,30 @@ structure TwoLayerStoneRouteGeneratedData (d m : Nat) [CompactSpace (UnitCube d)
         (⟨realizeC p, Algebra.subset_adjoin (s := Set.range realizeC) ⟨p, rfl⟩⟩ :
           Algebra.adjoin ℝ (Set.range realizeC)))
 
+/--
+Algebra-closed generated witness:
+`realizeC` can realize constants and is closed under pointwise `+` and `*`.
+Hence `adjoin (range realizeC)` is exactly representable by `realizeC`.
+-/
+structure TwoLayerStoneRouteAlgebraClosedData (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepRange :
+    Set.SeparatesPoints
+      ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' (Set.range realizeC))
+  hConst :
+    ∀ c : Real,
+      ∃ p : TwoLayerParams d m, realizeC p = algebraMap ℝ C(UnitCube d, Real) c
+  hAdd :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p + realizeC q
+  hMul :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p * realizeC q
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -173,6 +197,64 @@ def TwoLayerStoneRouteGeneratedData.toClosureData
     (A : TwoLayerStoneRouteGeneratedData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toPrimitiveData.toClosureData
+
+/--
+If `realizeC` is algebra-closed (constants, addition, multiplication), then every element of
+`adjoin (range realizeC)` is exactly representable by some parameter tuple.
+-/
+theorem TwoLayerStoneRouteAlgebraClosedData.adjoin_subset_range
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedData d m) :
+    (Algebra.adjoin ℝ (Set.range A.realizeC) : Set C(UnitCube d, Real)) ⊆
+      Set.range A.realizeC := by
+  intro f hf
+  refine
+    (Algebra.adjoin_induction
+      (s := Set.range A.realizeC)
+      (p := fun g _ => g ∈ Set.range A.realizeC)
+      (mem := fun g hg => hg)
+      (algebraMap := fun c => ?_ )
+      (add := fun g h hg hh hgR hhR => ?_)
+      (mul := fun g h hg hh hgR hhR => ?_)
+      hf)
+  · rcases A.hConst c with ⟨p, hp⟩
+    exact ⟨p, hp⟩
+  · rcases hgR with ⟨pg, hpg⟩
+    rcases hhR with ⟨ph, hph⟩
+    rcases A.hAdd pg ph with ⟨pr, hpr⟩
+    refine ⟨pr, ?_⟩
+    simpa [hpg, hph] using hpr
+  · rcases hgR with ⟨pg, hpg⟩
+    rcases hhR with ⟨ph, hph⟩
+    rcases A.hMul pg ph with ⟨pr, hpr⟩
+    refine ⟨pr, ?_⟩
+    simpa [hpg, hph] using hpr
+
+/--
+Algebra-closed data can be converted to exact Stone-route data with witness algebra
+`adjoin (range realizeC)`.
+-/
+def TwoLayerStoneRouteAlgebraClosedData.toStoneRouteData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedData d m) :
+    TwoLayerStoneRouteData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  witnessAlg := Algebra.adjoin ℝ (Set.range A.realizeC)
+  hSep := adjoin_separatesPoints_of_range A.realizeC A.hSepRange
+  hRepresent := by
+    intro g
+    have hsubset := A.adjoin_subset_range
+    rcases hsubset g.property with ⟨p, hp⟩
+    exact ⟨p, by simpa using hp⟩
+
+/-- Algebra-closed data yields closure-level Stone witness automatically. -/
+def TwoLayerStoneRouteAlgebraClosedData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toStoneRouteData.toClosureData
 
 /--
 Epsilon-level approximation obtained by Stone-Weierstrass on the witness algebra,

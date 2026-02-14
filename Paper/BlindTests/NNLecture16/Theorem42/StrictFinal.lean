@@ -59,6 +59,17 @@ theorem theorem42_strict_final_of_generated
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Compatibility wrapper: if the realized family is algebra-closed (constants/add/mul)
+and separates points, strict final follows with no explicit density witness input.
+-/
+theorem theorem42_strict_final_of_algebra_closed
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final_of_exact_representation (A := A.toStoneRouteData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/
