@@ -310,6 +310,18 @@ structure TwoLayerStoneRouteEvalConstructiveParamSepData
     ∀ x y : UnitCube d, x ≠ y ->
       ∃ p : TwoLayerParams d m, ops.realizeC p x ≠ ops.realizeC p y
 
+/--
+Fully constructive point-separation interface:
+users provide an explicit parameter constructor that separates any two distinct points.
+-/
+structure TwoLayerStoneRouteEvalSeparationOpsData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  ops : TwoLayerEvalAlgebraOps d m
+  sepParam : UnitCube d -> UnitCube d -> TwoLayerParams d m
+  sep_spec :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ops.realizeC (sepParam x y) x ≠ ops.realizeC (sepParam x y) y
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -623,6 +635,25 @@ noncomputable def TwoLayerStoneRouteEvalConstructiveParamSepData.toClosureData
     (A : TwoLayerStoneRouteEvalConstructiveParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toEvalExistsParamSepData.toClosureData
+
+/--
+Constructive separation-operator witness implies constructive param-separation witness.
+-/
+def TwoLayerStoneRouteEvalSeparationOpsData.toEvalConstructiveParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalSeparationOpsData d m) :
+    TwoLayerStoneRouteEvalConstructiveParamSepData d m where
+  ops := A.ops
+  hSepParam := by
+    intro x y hxy
+    exact ⟨A.sepParam x y, A.sep_spec x y hxy⟩
+
+/-- Constructive separation-operator witness implies closure-level Stone witness. -/
+noncomputable def TwoLayerStoneRouteEvalSeparationOpsData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalSeparationOpsData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toEvalConstructiveParamSepData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData

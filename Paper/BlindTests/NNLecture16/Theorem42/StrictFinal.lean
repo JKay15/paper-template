@@ -137,6 +137,17 @@ theorem theorem42_strict_final_of_eval_constructive_param_sep
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Compatibility wrapper: fully constructive separation operators + eval algebra ops
+can be lowered to strict-final route.
+-/
+theorem theorem42_strict_final_of_eval_separation_ops
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalSeparationOpsData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.ops.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/
