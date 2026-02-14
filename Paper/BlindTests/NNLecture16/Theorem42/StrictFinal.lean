@@ -175,6 +175,18 @@ theorem theorem42_strict_final_natural_formula
   simpa using A.realize_eq p x
 
 /--
+Subsingleton-domain wrapper for natural strict-final theorem:
+no explicit separation constructor is required from users.
+-/
+theorem theorem42_strict_final_natural_of_subsingleton
+    {d m : Nat} [CompactSpace (UnitCube d)] [Subsingleton (UnitCube d)]
+    (A : TwoLayerEvalAlgebraOps d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final_natural
+    (A := A.toNaturalData_of_subsingleton) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/

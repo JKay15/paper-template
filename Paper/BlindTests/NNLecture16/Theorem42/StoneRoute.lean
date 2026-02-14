@@ -716,6 +716,28 @@ noncomputable def TwoLayerTheorem42NaturalData.toClosureData
     TwoLayerStoneRouteClosureData d m :=
   A.toEvalSeparationOpsData.toClosureData
 
+/--
+On subsingleton domains, any eval-algebra-ops package can be promoted to natural final-input data
+without requiring an explicit separation constructor (separation is vacuous).
+-/
+def TwoLayerEvalAlgebraOps.toNaturalData_of_subsingleton
+    {d m : Nat} [CompactSpace (UnitCube d)] [Subsingleton (UnitCube d)]
+    (A : TwoLayerEvalAlgebraOps d m) :
+    TwoLayerTheorem42NaturalData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  constParam := A.constParam
+  addParam := A.addParam
+  mulParam := A.mulParam
+  eval_const := A.eval_const
+  eval_add := A.eval_add
+  eval_mul := A.eval_mul
+  sepParam := fun _ _ => A.constParam 0
+  sep_spec := by
+    intro x y hxy
+    exact (hxy (Subsingleton.elim x y)).elim
+
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]

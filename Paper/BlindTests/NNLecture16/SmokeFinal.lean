@@ -43,6 +43,8 @@ namespace Paper.BlindTests
 #check theorem42_strict_final_of_eval_separation_ops
 #check theorem42_strict_final_natural
 #check theorem42_strict_final_natural_formula
+#check TwoLayerEvalAlgebraOps.toNaturalData_of_subsingleton
+#check theorem42_strict_final_natural_of_subsingleton
 #check Theorem43PrimitiveModel
 #check theorem43_strict_final
 
