@@ -178,6 +178,16 @@ def TwoLayerUniversalApproxAlgorithm.toUniversalApproxAlgorithm
   approx := A.approx
   spec := A.spec
 
+/--
+Any concrete two-layer approximation algorithm induces the existential
+universal-approximation property on `UnitCube d`.
+-/
+theorem TwoLayerUniversalApproxAlgorithm.universalApproxProperty
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerUniversalApproxAlgorithm d m) :
+    UniversalApproxProperty A.realizeC := by
+  exact universalApproxProperty_of_algorithm A.realizeC A.toUniversalApproxAlgorithm
+
 /-- Construct a two-layer approximation algorithm from dense range (nonconstructive choice). -/
 noncomputable def twoLayerUniversalApproxAlgorithm_of_denseRange
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -213,6 +223,20 @@ noncomputable def TwoLayerDenseRealization.toAlgorithm
     TwoLayerUniversalApproxAlgorithm d m :=
   twoLayerUniversalApproxAlgorithm_of_denseRange
     (d := d) (m := m) A.act A.realizeC A.realize_eq A.hDense
+
+/-- Dense two-layer realization data induces a generic universal-approximation algorithm. -/
+noncomputable def TwoLayerDenseRealization.toUniversalApproxAlgorithm
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m) :
+    UniversalApproxAlgorithm A.realizeC :=
+  A.toAlgorithm.toUniversalApproxAlgorithm
+
+/-- Dense two-layer realization data induces the universal-approximation property. -/
+theorem TwoLayerDenseRealization.universalApproxProperty
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m) :
+    UniversalApproxProperty A.realizeC := by
+  exact universalApproxProperty_of_algorithm A.realizeC A.toUniversalApproxAlgorithm
 
 /-- Theorem 42 specialized to the unit-cube domain. -/
 theorem theorem42_on_unit_cube
@@ -302,6 +326,25 @@ theorem theorem42_on_unit_cube_from_twoLayer_denseFamily
       ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
   exact theorem42_on_unit_cube_from_twoLayer_denseRange
     (d := d) (m := m) A.act A.realizeC A.realize_eq A.hDense fStar hε
+
+/--
+Theorem 42 from a dense two-layer family, routed through the explicit
+algorithm interface (same conclusion as denseFamily direct version).
+-/
+theorem theorem42_on_unit_cube_from_twoLayer_denseFamily_via_algorithm
+    {d m : Nat}
+    [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
+  let Alg : TwoLayerUniversalApproxAlgorithm d m := A.toAlgorithm
+  refine ⟨Alg.approx fStar ε, ?_⟩
+  constructor
+  · exact Alg.spec fStar ε hε
+  · intro x
+    exact Alg.realize_eq (Alg.approx fStar ε) x
 
 /--
 Theorem 43 (Rademacher upper bound, abstract form):
