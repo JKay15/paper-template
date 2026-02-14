@@ -119,6 +119,40 @@ theorem theorem42_neural_networks_are_universal_from_algorithm
 /-- Unit-cube domain `[0,1]^d` encoded as a subtype of `Fin d -> Real`. -/
 abbrev UnitCube (d : Nat) := {x : InputVec d // ∀ i : Fin d, x i ∈ Set.Icc (0 : Real) 1}
 
+/-- Explicit parameter bundle for width-`m` two-layer networks on `R^d`. -/
+structure TwoLayerParams (d m : Nat) where
+  w : Fin m -> InputVec d
+  b : Fin m -> Real
+  α : Fin m -> Real
+
+/-- Evaluate a two-layer parameter bundle on an input vector. -/
+def evalTwoLayerParams {d m : Nat}
+    (act : Real -> Real) (p : TwoLayerParams d m) (x : InputVec d) : Real :=
+  twoLayerNN act p.w p.b p.α x
+
+/--
+Concrete two-layer universal-approximation interface on the unit cube.
+`realizeC` connects parameters to continuous functions and `realize_eq` pins the formula.
+-/
+structure TwoLayerUniversalApproxAlgorithm (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  approx : C(UnitCube d, Real) -> Real -> TwoLayerParams d m
+  spec :
+    ∀ f : C(UnitCube d, Real), ∀ ε : Real, 0 < ε ->
+      ‖realizeC (approx f ε) - f‖ ≤ ε
+
+/-- Convert concrete two-layer approximation interface to generic algorithm interface. -/
+def TwoLayerUniversalApproxAlgorithm.toUniversalApproxAlgorithm
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerUniversalApproxAlgorithm d m) :
+    UniversalApproxAlgorithm A.realizeC where
+  approx := A.approx
+  spec := A.spec
+
 /-- Theorem 42 specialized to the unit-cube domain. -/
 theorem theorem42_on_unit_cube
     {d : Nat} {Θ : Type*}
@@ -149,6 +183,24 @@ theorem theorem42_on_unit_cube_from_algorithm
     ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
   exact theorem42_on_unit_cube_deassumed
     (NN := NN) (hU := universalApproxProperty_of_algorithm NN A) fStar hε
+
+/--
+Theorem 42 for concrete two-layer parameterization:
+produces explicit parameters and keeps the standard two-layer formula link.
+-/
+theorem theorem42_on_unit_cube_from_twoLayer_algorithm
+    {d m : Nat}
+    [CompactSpace (UnitCube d)]
+    (A : TwoLayerUniversalApproxAlgorithm d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
+  refine ⟨A.approx fStar ε, ?_⟩
+  constructor
+  · exact A.spec fStar ε hε
+  · intro x
+    exact A.realize_eq (A.approx fStar ε) x
 
 /--
 Theorem 43 (Rademacher upper bound, abstract form):
