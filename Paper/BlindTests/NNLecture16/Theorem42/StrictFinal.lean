@@ -37,6 +37,17 @@ theorem theorem42_strict_final_of_exact_representation
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Compatibility wrapper: primitive dense-range witnesses can be downgraded to
+closure-level witnesses and fed into `theorem42_strict_final`.
+-/
+theorem theorem42_strict_final_of_primitive
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRoutePrimitiveData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/

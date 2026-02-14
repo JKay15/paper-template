@@ -45,6 +45,23 @@ structure TwoLayerStoneRouteClosureData (d m : Nat) [CompactSpace (UnitCube d)] 
   hWitnessInClosure :
     ∀ g : witnessAlg, (g : C(UnitCube d, Real)) ∈ closure (Set.range realizeC)
 
+/--
+Primitive Stone-route witness:
+`realizeC` values lie in `witnessAlg` and are dense there.
+This lets us automatically derive closure-level representability.
+-/
+structure TwoLayerStoneRoutePrimitiveData (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  witnessAlg : Subalgebra ℝ C(UnitCube d, Real)
+  hSep : witnessAlg.SeparatesPoints
+  hRangeInWitness : ∀ p : TwoLayerParams d m, realizeC p ∈ witnessAlg
+  hDenseInWitness :
+    DenseRange (fun p : TwoLayerParams d m => (⟨realizeC p, hRangeInWitness p⟩ : witnessAlg))
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -61,6 +78,37 @@ def TwoLayerStoneRouteData.toClosureData
     have hmem : (g : C(UnitCube d, Real)) ∈ Set.range A.realizeC := by
       exact ⟨p, by simpa using hp⟩
     exact subset_closure hmem
+
+/--
+Primitive witness implies closure-level witness by converting dense range in the witness algebra
+to closure of `Set.range realizeC` in ambient `C(UnitCube d, Real)`.
+-/
+def TwoLayerStoneRoutePrimitiveData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRoutePrimitiveData d m) :
+    TwoLayerStoneRouteClosureData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  witnessAlg := A.witnessAlg
+  hSep := A.hSep
+  hWitnessInClosure := by
+    intro g
+    refine Metric.mem_closure_iff.2 ?_
+    intro ε hε
+    have hBallNe : (Metric.ball g ε).Nonempty := by
+      refine ⟨g, ?_⟩
+      simpa [Metric.mem_ball] using hε
+    obtain ⟨p, hpBall⟩ :=
+      DenseRange.exists_mem_open A.hDenseInWitness Metric.isOpen_ball hBallNe
+    have hpDistSubtype :
+        dist (⟨A.realizeC p, A.hRangeInWitness p⟩ : A.witnessAlg) g < ε := by
+      simpa [Metric.mem_ball] using hpBall
+    have hpDist :
+        dist (g : C(UnitCube d, Real)) (A.realizeC p) < ε := by
+      simpa [dist_comm] using hpDistSubtype
+    refine ⟨A.realizeC p, ?_, hpDist⟩
+    exact ⟨p, rfl⟩
 
 /--
 Epsilon-level approximation obtained by Stone-Weierstrass on the witness algebra,
