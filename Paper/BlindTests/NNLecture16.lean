@@ -554,6 +554,20 @@ structure FiniteClassConcentrationData
   hTailLe : ∀ h : H, tail h ≤ δ
 
 /--
+Packaged standard activation assumptions:
+`act 0 = 0` and 1-Lipschitz in mathlib's `LipschitzWith` sense.
+-/
+structure ActivationLipschitzData (act : Real -> Real) : Prop where
+  hActZero : act 0 = 0
+  hLip : LipschitzWith (1 : NNReal) act
+
+/-- Convert packaged standard activation assumptions to local `OneLipschitzAtZero`. -/
+private lemma ActivationLipschitzData.toOneLipschitzAtZero
+    {act : Real -> Real} (A : ActivationLipschitzData act) :
+    OneLipschitzAtZero act :=
+  oneLipschitzAtZero_of_lipschitzWith_one act A.hActZero A.hLip
+
+/--
 Theorem 43 (de-assumed version):
 derive the final bound from pointwise sample control + activation growth control,
 without directly assuming `hSingleUnit` / `hContractAbs`.
@@ -713,6 +727,24 @@ theorem theorem43_rademacher_linear_from_data_natural_scale_lipschitzWith
     (n := n) (m := m) (d := d) (hn := hn)
     (D := D) (act := act) (B2' := B2')
     hB2'Half hm hLip0
+
+/--
+Theorem 43 natural-scale variant using packaged standard activation assumptions.
+-/
+theorem theorem43_rademacher_linear_from_data_natural_scale_activationData
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real)) := by
+  exact theorem43_rademacher_linear_from_data_natural_scale
+    (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm AAct.toOneLipschitzAtZero
 
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
@@ -957,6 +989,26 @@ theorem theorem43_with_pac_from_concentration_data_bundle_natural_scale_lipschit
     hB2'Half hm hLip0
 
 /--
+Theorem 43 + PAC (bundle form) using packaged standard activation assumptions.
+-/
+theorem theorem43_with_pac_from_concentration_data_bundle_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (C : FiniteClassConcentrationData (H := H) μ)
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, C.bad h) ≤ (Fintype.card H : ENNReal) * C.δ := by
+  exact theorem43_with_pac_from_concentration_data_bundle_natural_scale
+    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm AAct.toOneLipschitzAtZero
+
+/--
 Theorem 43 + PAC from concentration premises (natural scale version),
 with mathlib `LipschitzWith` assumptions in the explicit-arguments wrapper.
 -/
@@ -1045,5 +1097,29 @@ theorem theorem43_with_pac_from_concentration_data_natural_scale_lipschitzWith
     (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
     (D := D) (act := act) (B2' := B2')
     hB2'Half hm hActZero hLip
+
+/--
+Theorem 43 + PAC concentration (data wrapper form) with packaged standard activation assumptions.
+-/
+theorem theorem43_with_pac_from_concentration_data_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (tail : H -> ENNReal) (δ : ENNReal)
+    (hConc : ∀ h : H, μ (bad h) ≤ tail h)
+    (hTailLe : ∀ h : H, tail h ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  exact theorem43_with_pac_from_concentration_data_natural_scale_lipschitzWith
+    (μ := μ) (bad := bad) (tail := tail) (δ := δ)
+    hConc hTailLe
+    (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm AAct.hActZero AAct.hLip
 
 end Paper.BlindTests
