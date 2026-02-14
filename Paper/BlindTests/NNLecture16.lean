@@ -307,6 +307,49 @@ theorem theorem43_rademacher_linear_from_norm_bounds
     (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
     hB2 hB2' hC2 hActGrowth hPointwise
 
+/-- Natural sufficient condition for the scale lower bound. -/
+private lemma scale_lower_bound_of_half_and_width
+    (B2' : Real) (m : Nat)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m) :
+    1 ≤ 2 * B2' * Real.sqrt (m : Real) := by
+  have hB2'Nonneg : 0 ≤ B2' := by nlinarith
+  have hTwo : (1 : Real) ≤ 2 * B2' := by nlinarith
+  have hmR : (1 : Real) ≤ (m : Real) := by exact_mod_cast hm
+  have hSqrt : (1 : Real) ≤ Real.sqrt (m : Real) := (Real.one_le_sqrt).2 hmR
+  calc
+    (1 : Real) = 1 * 1 := by ring
+    _ ≤ (2 * B2') * Real.sqrt (m : Real) := by
+      refine mul_le_mul hTwo hSqrt (by positivity) ?_
+      have : 0 ≤ (2 : Real) := by positivity
+      exact mul_nonneg this hB2'Nonneg
+
+/--
+Theorem 43 with natural scale assumptions:
+replace explicit `hScale` by `B2' ≥ 1/2` and `m ≥ 1`.
+-/
+theorem theorem43_rademacher_linear_from_norm_bounds_natural_scale
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real)) := by
+  have hB2' : 0 ≤ B2' := by nlinarith
+  have hScale : 1 ≤ 2 * B2' * Real.sqrt (m : Real) :=
+    scale_lower_bound_of_half_and_width B2' m hB2'Half hm
+  exact theorem43_rademacher_linear_from_norm_bounds
+    (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x) (act := act)
+    (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2' hC2 hLip0 hScale hW hX
+
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
     {H X : Type*} [Fintype H] [Nonempty H]
@@ -401,6 +444,34 @@ theorem theorem43_with_pac_concentration_deassumed
       (n := n) (m := m) (hn := hn) (F := F) (x := x) (act := act)
       (B2 := B2) (B2' := B2') (C2 := C2)
       hB2 hB2' hC2 hActGrowth hPointwise
+  · exact pac_badEvent_uniform_bound μ bad δ hTail
+
+/--
+Theorem 43 + PAC with natural scale assumptions:
+replace explicit `hScale` by `B2' ≥ 1/2` and `m ≥ 1`.
+-/
+theorem theorem43_with_pac_concentration_natural_scale
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (δ : ENNReal)
+    (hTail : ∀ h : H, μ (bad h) ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  constructor
+  · exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
+      (n := n) (m := m) (d := d) (hn := hn)
+      (w := w) (x := x) (act := act)
+      (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm hLip0 hW hX
   · exact pac_badEvent_uniform_bound μ bad δ hTail
 
 end Paper.BlindTests
