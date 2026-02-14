@@ -1,0 +1,35 @@
+name: Template CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Verify skill facade links
+        run: |
+          test -L .agents/skills/lean4
+          test -L .agents/skills/ml-paper-workflow
+          test -d .agents/skillpacks/lean-proof-skills/.agents/skills/lean4
+          test -d .agents/skillpacks/lean-proof-skills/.agents/skills/ml-paper-workflow
+
+      - name: Verify MCP setup script exists
+        run: |
+          test -x scripts/setup_mcp.sh
+          rg "codex mcp add lean-lsp -- uvx lean-lsp-mcp" scripts/setup_mcp.sh
+          rg "^\[mcp_servers\\.lean-lsp\]" .codex/config.toml
+
+      - name: Build
+        run: |
+          ~/.elan/bin/lake build
+
+      - name: Smoke import check
+        run: |
+          ~/.elan/bin/lake env lean Paper/Smoke.lean

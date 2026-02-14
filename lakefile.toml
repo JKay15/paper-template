@@ -1,0 +1,23 @@
+name = "PaperTemplate"
+version = "0.1.0"
+keywords = ["paper", "lean"]
+defaultTargets = ["Paper"]
+
+[leanOptions]
+pp.unicode.fun = true
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.27.0"
+
+[[require]]
+name = "MLTheory"
+git = "https://github.com/JKay15/mltheory-lean.git"
+rev = "v0.1.0"
+
+[[lean_lib]]
+name = "Paper"

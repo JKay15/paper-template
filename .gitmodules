@@ -1,0 +1,3 @@
+[submodule ".agents/skillpacks/lean-proof-skills"]
+	path = .agents/skillpacks/lean-proof-skills
+	url = https://github.com/JKay15/lean-proof-skills.git

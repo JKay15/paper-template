@@ -1,0 +1,9 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"
+personality = "pragmatic"
+
+# Repository-scoped Codex config for paper projects.
+# Keep lean-lsp MCP in repo scope; global config is only fallback.
+[mcp_servers.lean-lsp]
+command = "uvx"
+args = ["lean-lsp-mcp"]
