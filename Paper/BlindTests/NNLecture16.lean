@@ -54,6 +54,17 @@ structure UniversalApproxAlgorithm {X Θ : Type*} [TopologicalSpace X] [CompactS
   approx : C(X, Real) -> Real -> Θ
   spec : ∀ f : C(X, Real), ∀ ε : Real, 0 < ε -> ‖NN (approx f ε) - f‖ ≤ ε
 
+/-- Build an explicit approximator from the existential universal property. -/
+noncomputable def universalApproxAlgorithm_of_property
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X] [Inhabited Θ]
+    (NN : Θ -> C(X, Real))
+    (hU : UniversalApproxProperty NN) :
+    UniversalApproxAlgorithm NN where
+  approx := fun f ε => if hε : 0 < ε then Classical.choose (hU f ε hε) else default
+  spec := by
+    intro f ε hε
+    simpa [hε] using (Classical.choose_spec (hU f ε hε))
+
 /--
 Theorem 42 (universal approximation, abstract form):
 if the NN family is dense in `C(X, R)`, then every target can be approximated uniformly.
@@ -94,6 +105,14 @@ theorem universalApproxProperty_of_algorithm
   refine ⟨A.approx f ε, ?_⟩
   exact A.spec f ε hε
 
+/-- Build an explicit approximator directly from dense range. -/
+noncomputable def universalApproxAlgorithm_of_denseRange
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X] [Inhabited Θ]
+    (NN : Θ -> C(X, Real))
+    (hDense : DenseRange NN) :
+    UniversalApproxAlgorithm NN :=
+  universalApproxAlgorithm_of_property NN (universalApproxProperty_of_denseRange NN hDense)
+
 /--
 Theorem 42 in de-assumed interface form:
 use `UniversalApproxProperty` directly, without taking `hDense` as input.
@@ -125,6 +144,12 @@ structure TwoLayerParams (d m : Nat) where
   b : Fin m -> Real
   α : Fin m -> Real
 
+instance instInhabitedTwoLayerParams (d m : Nat) : Inhabited (TwoLayerParams d m) where
+  default :=
+    { w := fun _ _ => 0
+      b := fun _ => 0
+      α := fun _ => 0 }
+
 /-- Evaluate a two-layer parameter bundle on an input vector. -/
 def evalTwoLayerParams {d m : Nat}
     (act : Real -> Real) (p : TwoLayerParams d m) (x : InputVec d) : Real :=
@@ -152,6 +177,22 @@ def TwoLayerUniversalApproxAlgorithm.toUniversalApproxAlgorithm
     UniversalApproxAlgorithm A.realizeC where
   approx := A.approx
   spec := A.spec
+
+/-- Construct a two-layer approximation algorithm from dense range (nonconstructive choice). -/
+noncomputable def twoLayerUniversalApproxAlgorithm_of_denseRange
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (act : Real -> Real)
+    (realizeC : TwoLayerParams d m -> C(UnitCube d, Real))
+    (realize_eq :
+      ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+        realizeC p x = evalTwoLayerParams act p x.1)
+    (hDense : DenseRange realizeC) :
+    TwoLayerUniversalApproxAlgorithm d m where
+  act := act
+  realizeC := realizeC
+  realize_eq := realize_eq
+  approx := (universalApproxAlgorithm_of_denseRange realizeC hDense).approx
+  spec := (universalApproxAlgorithm_of_denseRange realizeC hDense).spec
 
 /-- Theorem 42 specialized to the unit-cube domain. -/
 theorem theorem42_on_unit_cube
@@ -196,6 +237,31 @@ theorem theorem42_on_unit_cube_from_twoLayer_algorithm
     ∃ p : TwoLayerParams d m,
       ‖A.realizeC p - fStar‖ ≤ ε
       ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
+  refine ⟨A.approx fStar ε, ?_⟩
+  constructor
+  · exact A.spec fStar ε hε
+  · intro x
+    exact A.realize_eq (A.approx fStar ε) x
+
+/--
+Theorem 42 on unit cube directly from dense range of a concrete two-layer realization map.
+This removes the need to manually provide an algorithm spec.
+-/
+theorem theorem42_on_unit_cube_from_twoLayer_denseRange
+    {d m : Nat}
+    [CompactSpace (UnitCube d)]
+    (act : Real -> Real)
+    (realizeC : TwoLayerParams d m -> C(UnitCube d, Real))
+    (realize_eq :
+      ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+        realizeC p x = evalTwoLayerParams act p x.1)
+    (hDense : DenseRange realizeC)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖realizeC p - fStar‖ ≤ ε
+      ∧ ∀ x : UnitCube d, realizeC p x = evalTwoLayerParams act p x.1 := by
+  let A := twoLayerUniversalApproxAlgorithm_of_denseRange
+    (d := d) (m := m) act realizeC realize_eq hDense
   refine ⟨A.approx fStar ε, ?_⟩
   constructor
   · exact A.spec fStar ε hε
@@ -362,6 +428,25 @@ private lemma pointwise_linear_bound_of_norm_bounds
     simp [div_eq_mul_inv, mul_assoc]
   exact (hInner.trans hStep1).trans (hStep2.trans hStep3)
 
+/-- Unified bounded linear-class data used by de-assumed Theorem 43 variants. -/
+structure LinearClassData (H : Type*) (d n : Nat) where
+  w : H -> EuclideanSpace Real (Fin d)
+  x : Sample (EuclideanSpace Real (Fin d)) n
+  B2 : Real
+  C2 : Real
+  hB2 : 0 ≤ B2
+  hC2 : 0 ≤ C2
+  hW : ∀ h : H, ‖w h‖ ≤ B2
+  hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)
+
+/-- Pointwise bound derived from packaged linear-class data. -/
+private lemma pointwise_linear_bound_of_data
+    {H : Type*} {d n : Nat}
+    (D : LinearClassData H d n) :
+    ∀ h : H, ∀ i : Fin n,
+      |(fun h t => inner ℝ (D.w h) t) h (D.x i)| ≤ D.B2 * D.C2 / Real.sqrt (n : Real) :=
+  pointwise_linear_bound_of_norm_bounds D.w D.x D.B2 D.C2 D.hB2 D.hW D.hX
+
 /--
 Theorem 43 (de-assumed version):
 derive the final bound from pointwise sample control + activation growth control,
@@ -480,6 +565,26 @@ theorem theorem43_rademacher_linear_from_norm_bounds_natural_scale
     (w := w) (x := x) (act := act)
     (B2 := B2) (B2' := B2') (C2 := C2)
     hB2 hB2' hC2 hLip0 hScale hW hX
+
+/--
+Theorem 43 natural-scale variant using packaged bounded linear-class data.
+This removes direct `hW/hX` arguments from the theorem boundary.
+-/
+theorem theorem43_rademacher_linear_from_data_natural_scale
+    {H : Type*} [Fintype H] [Nonempty H]
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real)) := by
+  exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
+    (n := n) (m := m) (d := d) (hn := hn)
+    (w := D.w) (x := D.x) (act := act)
+    (B2 := D.B2) (B2' := B2') (C2 := D.C2)
+    D.hB2 hB2'Half D.hC2 hm hLip0 D.hW D.hX
 
 /-- Theorem 43 constant written in the factored product-over-sqrt form. -/
 theorem theorem43_rademacher_complexity_upper_bound_factored
@@ -640,5 +745,35 @@ theorem theorem43_with_pac_from_concentration_natural_scale
         Finset.sum_le_sum (fun h _ => hTailLe h)
       _ = (Fintype.card H : ENNReal) * δ := by
         simp
+
+/--
+Theorem 43 + PAC concentration from packaged bounded linear-class data.
+This removes direct `hW/hX` arguments from theorem inputs.
+-/
+theorem theorem43_with_pac_from_concentration_data_natural_scale
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (bad : H -> Set Ω) (tail : H -> ENNReal) (δ : ENNReal)
+    (hConc : ∀ h : H, μ (bad h) ≤ tail h)
+    (hTailLe : ∀ h : H, tail h ≤ δ)
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
+  constructor
+  · exact theorem43_rademacher_linear_from_data_natural_scale
+      (n := n) (m := m) (d := d) (hn := hn)
+      (D := D) (act := act) (B2' := B2')
+      hB2'Half hm hLip0
+  · calc
+      μ (⋃ h : H, bad h) ≤ ∑ h : H, tail h :=
+        pac_badEvent_from_concentration μ bad tail hConc
+      _ ≤ ∑ h : H, δ :=
+        Finset.sum_le_sum (fun h _ => hTailLe h)
+      _ = (Fintype.card H : ENNReal) * δ := by simp
 
 end Paper.BlindTests
