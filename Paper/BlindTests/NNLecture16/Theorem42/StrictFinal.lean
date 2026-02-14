@@ -115,6 +115,17 @@ theorem theorem42_strict_final_of_algebraic_exists_param_sep
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Compatibility wrapper: eval-level existential algebraic assumptions
+can be lifted to strict-final route.
+-/
+theorem theorem42_strict_final_of_eval_exists_param_sep
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalExistsParamSepData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/

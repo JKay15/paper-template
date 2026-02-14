@@ -23,6 +23,7 @@ namespace Paper.BlindTests
 #check TwoLayerRealizationAlgebraOps
 #check TwoLayerStoneRouteAlgebraicGeneratorParamSepData
 #check TwoLayerStoneRouteAlgebraicExistsParamSepData
+#check TwoLayerStoneRouteEvalExistsParamSepData
 #check theorem42_strict_final
 #check theorem42_strict_final_formula
 #check theorem42_strict_final_of_exact_representation
@@ -33,6 +34,7 @@ namespace Paper.BlindTests
 #check theorem42_strict_final_of_algebra_closed_param_sep
 #check theorem42_strict_final_of_algebraic_generator_param_sep
 #check theorem42_strict_final_of_algebraic_exists_param_sep
+#check theorem42_strict_final_of_eval_exists_param_sep
 #check Theorem43PrimitiveModel
 #check theorem43_strict_final
 

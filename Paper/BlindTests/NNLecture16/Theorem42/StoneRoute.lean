@@ -243,6 +243,37 @@ structure TwoLayerStoneRouteAlgebraicExistsParamSepData
     ∀ p q : TwoLayerParams d m,
       ∃ r : TwoLayerParams d m, realizeC r = realizeC p * realizeC q
 
+/--
+Eval-level existential algebraic assumptions:
+users only prove closure properties directly on `evalTwoLayerParams`,
+and function-level equalities in `C(UnitCube d, Real)` are derived automatically.
+-/
+structure TwoLayerStoneRouteEvalExistsParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, realizeC p x ≠ realizeC p y
+  hConstEvalExists :
+    ∀ c : Real,
+      ∃ p : TwoLayerParams d m, ∀ x : InputVec d, evalTwoLayerParams act p x = c
+  hAddEvalExists :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m,
+        ∀ x : InputVec d,
+          evalTwoLayerParams act r x =
+            evalTwoLayerParams act p x + evalTwoLayerParams act q x
+  hMulEvalExists :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m,
+        ∀ x : InputVec d,
+          evalTwoLayerParams act r x =
+            evalTwoLayerParams act p x * evalTwoLayerParams act q x
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -480,6 +511,54 @@ noncomputable def TwoLayerStoneRouteAlgebraicExistsParamSepData.toClosureData
     (A : TwoLayerStoneRouteAlgebraicExistsParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toAlgebraicGeneratorParamSepData.toClosureData
+
+/--
+Eval-level existential assumptions imply function-level existential algebraic assumptions.
+-/
+def TwoLayerStoneRouteEvalExistsParamSepData.toAlgebraicExistsParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalExistsParamSepData d m) :
+    TwoLayerStoneRouteAlgebraicExistsParamSepData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  hSepParam := A.hSepParam
+  hConstExists := by
+    intro c
+    rcases A.hConstEvalExists c with ⟨p, hp⟩
+    refine ⟨p, ?_⟩
+    ext x
+    calc
+      A.realizeC p x = evalTwoLayerParams A.act p x.1 := A.realize_eq p x
+      _ = c := hp x.1
+      _ = (algebraMap ℝ C(UnitCube d, Real) c) x := by simp
+  hAddExists := by
+    intro p q
+    rcases A.hAddEvalExists p q with ⟨r, hr⟩
+    refine ⟨r, ?_⟩
+    ext x
+    calc
+      A.realizeC r x = evalTwoLayerParams A.act r x.1 := A.realize_eq r x
+      _ = evalTwoLayerParams A.act p x.1 + evalTwoLayerParams A.act q x.1 := hr x.1
+      _ = A.realizeC p x + A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+  hMulExists := by
+    intro p q
+    rcases A.hMulEvalExists p q with ⟨r, hr⟩
+    refine ⟨r, ?_⟩
+    ext x
+    calc
+      A.realizeC r x = evalTwoLayerParams A.act r x.1 := A.realize_eq r x
+      _ = evalTwoLayerParams A.act p x.1 * evalTwoLayerParams A.act q x.1 := hr x.1
+      _ = A.realizeC p x * A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+
+/-- Eval-level existential assumptions imply closure-level Stone witness. -/
+noncomputable def TwoLayerStoneRouteEvalExistsParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalExistsParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  (A.toAlgebraicExistsParamSepData).toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData
