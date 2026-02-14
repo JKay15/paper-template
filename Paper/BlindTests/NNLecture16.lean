@@ -347,6 +347,25 @@ theorem theorem42_on_unit_cube_from_twoLayer_denseFamily_via_algorithm
     exact Alg.realize_eq (Alg.approx fStar ε) x
 
 /--
+Theorem 42 from a dense two-layer family, routed through the explicit
+universal-approximation property interface.
+-/
+theorem theorem42_on_unit_cube_from_twoLayer_denseFamily_via_property
+    {d m : Nat}
+    [CompactSpace (UnitCube d)]
+    (A : TwoLayerDenseRealization d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ ∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1 := by
+  have hU : UniversalApproxProperty A.realizeC := A.universalApproxProperty
+  obtain ⟨p, hp⟩ := theorem42_on_unit_cube_deassumed
+    (NN := A.realizeC) hU fStar hε
+  refine ⟨p, hp, ?_⟩
+  intro x
+  exact A.realize_eq p x
+
+/--
 Theorem 43 (Rademacher upper bound, abstract form):
 compose standard-to-absolute bridge, contraction, and single-unit bound.
 -/
