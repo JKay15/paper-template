@@ -23,10 +23,15 @@ extract_stmt() {
 FORBIDDEN='hDense|UniversalApproxProperty|UniversalApproxAlgorithm|SampleConcentrationData|FiniteClassConcentrationData|HasSubgaussianMGF'
 
 T42_STMT="$(extract_stmt "$T42_FILE" "theorem42_strict_final")"
+T42_FINAL_STMT="$(extract_stmt "$T42_FILE" "theorem42_strict_final_final")"
 T43_STMT="$(extract_stmt "$T43_FILE" "theorem43_strict_final")"
 
 if [[ -z "$T42_STMT" ]]; then
   echo "[check_final_signature] theorem42_strict_final not found"
+  exit 1
+fi
+if [[ -z "$T42_FINAL_STMT" ]]; then
+  echo "[check_final_signature] theorem42_strict_final_final not found"
   exit 1
 fi
 if [[ -z "$T43_STMT" ]]; then
@@ -37,6 +42,12 @@ fi
 if echo "$T42_STMT" | rg -q "$FORBIDDEN"; then
   echo "[check_final_signature] forbidden token found in theorem42_strict_final signature"
   echo "$T42_STMT"
+  exit 1
+fi
+
+if echo "$T42_FINAL_STMT" | rg -q "$FORBIDDEN"; then
+  echo "[check_final_signature] forbidden token found in theorem42_strict_final_final signature"
+  echo "$T42_FINAL_STMT"
   exit 1
 fi
 

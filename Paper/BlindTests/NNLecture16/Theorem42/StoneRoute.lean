@@ -431,6 +431,116 @@ def TwoLayerTheorem42NaturalLocalData.toAlgebraicExistsParamSepData
       _ = A.realizeC p x * A.realizeC q x := by
         simpa [A.realize_eq p x, A.realize_eq q x]
 
+/--
+Canonical strict-final data object for Theorem 42.
+This alias is the preferred user-facing shape for proving that the two-layer
+function class itself is uniformly dense on `UnitCube d`.
+-/
+abbrev TwoLayerTheorem42FinalData
+    (d m : Nat) [CompactSpace (UnitCube d)] :=
+  TwoLayerTheorem42NaturalLocalData d m
+
+/-- Two-layer function class induced by a final-data object. -/
+def TwoLayerTheorem42FinalData.functionClass
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m) : Set (C(UnitCube d, Real)) :=
+  Set.range A.realizeC
+
+/-- Constant functions are in the induced two-layer class. -/
+lemma TwoLayerTheorem42FinalData.const_mem_functionClass
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m) (c : Real) :
+    algebraMap ℝ C(UnitCube d, Real) c ∈ A.functionClass := by
+  refine ⟨A.constParam c, ?_⟩
+  ext x
+  calc
+    A.realizeC (A.constParam c) x = evalTwoLayerParams A.act (A.constParam c) x.1 := A.realize_eq _ x
+    _ = c := A.eval_const c x
+    _ = (algebraMap ℝ C(UnitCube d, Real) c) x := by simp
+
+/-- Pointwise addition preserves the induced two-layer class. -/
+lemma TwoLayerTheorem42FinalData.add_mem_functionClass
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    {f g : C(UnitCube d, Real)}
+    (hf : f ∈ A.functionClass) (hg : g ∈ A.functionClass) :
+    f + g ∈ A.functionClass := by
+  rcases hf with ⟨p, rfl⟩
+  rcases hg with ⟨q, rfl⟩
+  refine ⟨A.addParam p q, ?_⟩
+  ext x
+  calc
+    A.realizeC (A.addParam p q) x = evalTwoLayerParams A.act (A.addParam p q) x.1 := A.realize_eq _ x
+    _ = evalTwoLayerParams A.act p x.1 + evalTwoLayerParams A.act q x.1 := A.eval_add p q x
+    _ = A.realizeC p x + A.realizeC q x := by simpa [A.realize_eq p x, A.realize_eq q x]
+
+/-- Pointwise multiplication preserves the induced two-layer class. -/
+lemma TwoLayerTheorem42FinalData.mul_mem_functionClass
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    {f g : C(UnitCube d, Real)}
+    (hf : f ∈ A.functionClass) (hg : g ∈ A.functionClass) :
+    f * g ∈ A.functionClass := by
+  rcases hf with ⟨p, rfl⟩
+  rcases hg with ⟨q, rfl⟩
+  refine ⟨A.mulParam p q, ?_⟩
+  ext x
+  calc
+    A.realizeC (A.mulParam p q) x = evalTwoLayerParams A.act (A.mulParam p q) x.1 := A.realize_eq _ x
+    _ = evalTwoLayerParams A.act p x.1 * evalTwoLayerParams A.act q x.1 := A.eval_mul p q x
+    _ = A.realizeC p x * A.realizeC q x := by simpa [A.realize_eq p x, A.realize_eq q x]
+
+/-- Distinct points are separated by the induced two-layer class. -/
+theorem TwoLayerTheorem42FinalData.functionClass_separatesPoints
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m) :
+    ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' A.functionClass).SeparatesPoints := by
+  have hSepParam :
+      ∀ x y : UnitCube d, x ≠ y ->
+        ∃ p : TwoLayerParams d m, A.realizeC p x ≠ A.realizeC p y := by
+    intro x y hxy
+    exact ⟨A.sepParam x y, A.sep_spec x y hxy⟩
+  simpa [TwoLayerTheorem42FinalData.functionClass] using
+    (sepRange_of_sepParams (d := d) (m := m) (realizeC := A.realizeC) hSepParam)
+
+/-- Convert final-data object to algebra-closed+separation Stone witness input. -/
+def TwoLayerTheorem42FinalData.toAlgebraClosedParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m) :
+    TwoLayerStoneRouteAlgebraClosedParamSepData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  hSepParam := by
+    intro x y hxy
+    exact ⟨A.sepParam x y, A.sep_spec x y hxy⟩
+  hConst := by
+    intro c
+    refine ⟨A.constParam c, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.constParam c) x = evalTwoLayerParams A.act (A.constParam c) x.1 := A.realize_eq _ x
+      _ = c := A.eval_const c x
+      _ = (algebraMap ℝ C(UnitCube d, Real) c) x := by simp
+  hAdd := by
+    intro p q
+    refine ⟨A.addParam p q, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.addParam p q) x = evalTwoLayerParams A.act (A.addParam p q) x.1 := A.realize_eq _ x
+      _ = evalTwoLayerParams A.act p x.1 + evalTwoLayerParams A.act q x.1 := A.eval_add p q x
+      _ = A.realizeC p x + A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+  hMul := by
+    intro p q
+    refine ⟨A.mulParam p q, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.mulParam p q) x = evalTwoLayerParams A.act (A.mulParam p q) x.1 := A.realize_eq _ x
+      _ = evalTwoLayerParams A.act p x.1 * evalTwoLayerParams A.act q x.1 := A.eval_mul p q x
+      _ = A.realizeC p x * A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+
 /-- Continuous coordinate function on `UnitCube d`. -/
 def unitCubeCoordC {d : Nat} (i : Fin d) : C(UnitCube d, Real) where
   toFun := fun x => x.1 i
@@ -1095,5 +1205,30 @@ theorem TwoLayerStoneRouteClosureData.exists_uniform_le
     ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
   obtain ⟨p, hp⟩ := A.exists_uniform_near fStar hε
   exact ⟨p, le_of_lt hp⟩
+
+/-- Convert final-data object to closure-level strict witness data. -/
+noncomputable def TwoLayerTheorem42FinalData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toAlgebraClosedParamSepData.toClosureData
+
+/-- Uniform epsilon approximation from final-data object (Theorem 42 core form). -/
+theorem TwoLayerTheorem42FinalData.exists_uniform_le
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact (A.toClosureData).exists_uniform_le fStar hε
+
+/-- Function-class density form: an approximant inside `A.functionClass` exists. -/
+theorem TwoLayerTheorem42FinalData.functionClass_uniform_dense
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ g : C(UnitCube d, Real), g ∈ A.functionClass ∧ ‖g - fStar‖ ≤ ε := by
+  obtain ⟨p, hp⟩ := A.exists_uniform_le fStar hε
+  refine ⟨A.realizeC p, ⟨p, rfl⟩, ?_⟩
+  simpa using hp
 
 end Paper.BlindTests

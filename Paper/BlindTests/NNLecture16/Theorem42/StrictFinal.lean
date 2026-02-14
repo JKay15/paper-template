@@ -26,6 +26,28 @@ theorem theorem42_strict_final
   A.exists_uniform_le fStar hε
 
 /--
+Canonical strict Theorem 42 endpoint (final-data form):
+the two-layer class itself uniformly approximates any continuous target.
+-/
+theorem theorem42_strict_final_final
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact A.exists_uniform_le fStar hε
+
+/--
+Class-density form of strict Theorem 42:
+the approximant is explicitly returned as an element of the induced function class.
+-/
+theorem theorem42_strict_final_class_dense
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42FinalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ g : C(UnitCube d, Real), g ∈ A.functionClass ∧ ‖g - fStar‖ ≤ ε := by
+  exact A.functionClass_uniform_dense fStar hε
+
+/--
 Compatibility wrapper: exact-representation witnesses can be downgraded to
 closure-level witnesses and fed into `theorem42_strict_final`.
 -/
