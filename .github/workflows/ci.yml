@@ -33,3 +33,8 @@ jobs:
       - name: Smoke import check
         run: |
           ~/.elan/bin/lake env lean Paper/Smoke.lean
+
+      - name: Blind test check
+        run: |
+          ~/.elan/bin/lake env lean Paper/BlindTests/PACRadBlind.lean
+          ~/.elan/bin/lake env lean Paper/BlindTests/NNLecture16.lean
