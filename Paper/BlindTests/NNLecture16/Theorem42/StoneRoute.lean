@@ -352,6 +352,208 @@ structure TwoLayerTheorem42NaturalData
     ∀ x y : UnitCube d, x ≠ y ->
       realizeC (sepParam x y) x ≠ realizeC (sepParam x y) y
 
+/--
+Natural final-input data (local/cube-only variant):
+algebraic closure is required only on `UnitCube d`, not on all of `InputVec d`.
+-/
+structure TwoLayerTheorem42NaturalLocalData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  constParam : Real -> TwoLayerParams d m
+  addParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  mulParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  eval_const :
+    ∀ c : Real, ∀ x : UnitCube d, evalTwoLayerParams act (constParam c) x.1 = c
+  eval_add :
+    ∀ p q : TwoLayerParams d m, ∀ x : UnitCube d,
+      evalTwoLayerParams act (addParam p q) x.1 =
+        evalTwoLayerParams act p x.1 + evalTwoLayerParams act q x.1
+  eval_mul :
+    ∀ p q : TwoLayerParams d m, ∀ x : UnitCube d,
+      evalTwoLayerParams act (mulParam p q) x.1 =
+        evalTwoLayerParams act p x.1 * evalTwoLayerParams act q x.1
+  sepParam : UnitCube d -> UnitCube d -> TwoLayerParams d m
+  sep_spec :
+    ∀ x y : UnitCube d, x ≠ y ->
+      realizeC (sepParam x y) x ≠ realizeC (sepParam x y) y
+
+/-- Local natural data implies existential algebraic+separation witness. -/
+def TwoLayerTheorem42NaturalLocalData.toAlgebraicExistsParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalLocalData d m) :
+    TwoLayerStoneRouteAlgebraicExistsParamSepData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  hSepParam := by
+    intro x y hxy
+    exact ⟨A.sepParam x y, A.sep_spec x y hxy⟩
+  hConstExists := by
+    intro c
+    refine ⟨A.constParam c, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.constParam c) x = evalTwoLayerParams A.act (A.constParam c) x.1 := A.realize_eq _ x
+      _ = c := A.eval_const c x
+      _ = (algebraMap ℝ C(UnitCube d, Real) c) x := by simp
+  hAddExists := by
+    intro p q
+    refine ⟨A.addParam p q, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.addParam p q) x = evalTwoLayerParams A.act (A.addParam p q) x.1 := A.realize_eq _ x
+      _ = evalTwoLayerParams A.act p x.1 + evalTwoLayerParams A.act q x.1 := A.eval_add p q x
+      _ = A.realizeC p x + A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+  hMulExists := by
+    intro p q
+    refine ⟨A.mulParam p q, ?_⟩
+    ext x
+    calc
+      A.realizeC (A.mulParam p q) x = evalTwoLayerParams A.act (A.mulParam p q) x.1 := A.realize_eq _ x
+      _ = evalTwoLayerParams A.act p x.1 * evalTwoLayerParams A.act q x.1 := A.eval_mul p q x
+      _ = A.realizeC p x * A.realizeC q x := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+
+/-- Continuous coordinate function on `UnitCube d`. -/
+def unitCubeCoordC {d : Nat} (i : Fin d) : C(UnitCube d, Real) where
+  toFun := fun x => x.1 i
+  continuous_toFun := (continuous_apply i).comp continuous_subtype_val
+
+/-- Distinct vectors differ on some coordinate. -/
+lemma exists_coord_ne_of_ne_input
+    {d : Nat} {x y : InputVec d} (hxy : x ≠ y) :
+    ∃ i : Fin d, x i ≠ y i := by
+  by_contra hNo
+  apply hxy
+  ext i
+  exact not_ne_iff.mp ((not_exists.mp hNo) i)
+
+/-- Distinct points in `UnitCube d` differ on some coordinate. -/
+lemma exists_coord_ne_of_ne_unitCube
+    {d : Nat} {x y : UnitCube d} (hxy : x ≠ y) :
+    ∃ i : Fin d, x.1 i ≠ y.1 i := by
+  apply exists_coord_ne_of_ne_input
+  intro hVal
+  apply hxy
+  exact Subtype.ext hVal
+
+/--
+Surjective realization package:
+every continuous function on `UnitCube d` is realizable by some parameter.
+-/
+structure TwoLayerTheorem42SurjectiveData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSurj : Function.Surjective realizeC
+
+/--
+Build local natural data from surjective realizability.
+This yields a non-subsingleton-capable entry path without exposing Stone internals.
+-/
+noncomputable def TwoLayerTheorem42SurjectiveData.toNaturalLocalData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42SurjectiveData d m) :
+    TwoLayerTheorem42NaturalLocalData d m := by
+  classical
+  let constParamFun : Real -> TwoLayerParams d m := fun c =>
+    Classical.choose (A.hSurj (algebraMap ℝ C(UnitCube d, Real) c))
+  let addParamFun : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m := fun p q =>
+    Classical.choose (A.hSurj (A.realizeC p + A.realizeC q))
+  let mulParamFun : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m := fun p q =>
+    Classical.choose (A.hSurj (A.realizeC p * A.realizeC q))
+  let sepParamFun : UnitCube d -> UnitCube d -> TwoLayerParams d m := fun x y =>
+    if hxy : x ≠ y then
+      let i : Fin d := Classical.choose (exists_coord_ne_of_ne_unitCube hxy)
+      Classical.choose (A.hSurj (unitCubeCoordC i))
+    else
+      constParamFun 0
+  refine
+    { act := A.act
+      realizeC := A.realizeC
+      realize_eq := A.realize_eq
+      constParam := constParamFun
+      addParam := addParamFun
+      mulParam := mulParamFun
+      eval_const := ?_
+      eval_add := ?_
+      eval_mul := ?_
+      sepParam := sepParamFun
+      sep_spec := ?_ }
+  · intro c x
+    have hConstEq :
+        A.realizeC (constParamFun c) = algebraMap ℝ C(UnitCube d, Real) c :=
+      Classical.choose_spec (A.hSurj (algebraMap ℝ C(UnitCube d, Real) c))
+    calc
+      evalTwoLayerParams A.act (constParamFun c) x.1 = A.realizeC (constParamFun c) x := by
+        simpa using (A.realize_eq (constParamFun c) x).symm
+      _ = (algebraMap ℝ C(UnitCube d, Real) c) x := by
+        simpa [hConstEq]
+      _ = c := by simp
+  · intro p q x
+    have hAddEq :
+        A.realizeC (addParamFun p q) = A.realizeC p + A.realizeC q :=
+      Classical.choose_spec (A.hSurj (A.realizeC p + A.realizeC q))
+    calc
+      evalTwoLayerParams A.act (addParamFun p q) x.1 = A.realizeC (addParamFun p q) x := by
+        simpa using (A.realize_eq (addParamFun p q) x).symm
+      _ = (A.realizeC p + A.realizeC q) x := by
+        simpa [hAddEq]
+      _ = evalTwoLayerParams A.act p x.1 + evalTwoLayerParams A.act q x.1 := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+  · intro p q x
+    have hMulEq :
+        A.realizeC (mulParamFun p q) = A.realizeC p * A.realizeC q :=
+      Classical.choose_spec (A.hSurj (A.realizeC p * A.realizeC q))
+    calc
+      evalTwoLayerParams A.act (mulParamFun p q) x.1 = A.realizeC (mulParamFun p q) x := by
+        simpa using (A.realize_eq (mulParamFun p q) x).symm
+      _ = (A.realizeC p * A.realizeC q) x := by
+        simpa [hMulEq]
+      _ = evalTwoLayerParams A.act p x.1 * evalTwoLayerParams A.act q x.1 := by
+        simpa [A.realize_eq p x, A.realize_eq q x]
+  · intro x y hxy
+    let i : Fin d := Classical.choose (exists_coord_ne_of_ne_unitCube hxy)
+    have hi : x.1 i ≠ y.1 i := Classical.choose_spec (exists_coord_ne_of_ne_unitCube hxy)
+    have hCoordEq :
+        A.realizeC (Classical.choose (A.hSurj (unitCubeCoordC i))) = unitCubeCoordC i :=
+      Classical.choose_spec (A.hSurj (unitCubeCoordC i))
+    have hSepDef :
+        sepParamFun x y = Classical.choose (A.hSurj (unitCubeCoordC i)) := by
+      simp [sepParamFun, hxy, i]
+    have hx :
+        A.realizeC (sepParamFun x y) x = x.1 i := by
+      calc
+        A.realizeC (sepParamFun x y) x =
+            A.realizeC (Classical.choose (A.hSurj (unitCubeCoordC i))) x := by
+          simpa [hSepDef]
+        _ = (unitCubeCoordC i) x := by
+          simpa [hCoordEq]
+        _ = x.1 i := rfl
+    have hy :
+        A.realizeC (sepParamFun x y) y = y.1 i := by
+      calc
+        A.realizeC (sepParamFun x y) y =
+            A.realizeC (Classical.choose (A.hSurj (unitCubeCoordC i))) y := by
+          simpa [hSepDef]
+        _ = (unitCubeCoordC i) y := by
+          simpa [hCoordEq]
+        _ = y.1 i := rfl
+    intro hEq
+    apply hi
+    calc
+      x.1 i = A.realizeC (sepParamFun x y) x := hx.symm
+      _ = A.realizeC (sepParamFun x y) y := hEq
+      _ = y.1 i := hy
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -589,6 +791,13 @@ noncomputable def TwoLayerStoneRouteAlgebraicExistsParamSepData.toClosureData
     (A : TwoLayerStoneRouteAlgebraicExistsParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toAlgebraicGeneratorParamSepData.toClosureData
+
+/-- Local natural data implies closure-level Stone witness. -/
+noncomputable def TwoLayerTheorem42NaturalLocalData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalLocalData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toAlgebraicExistsParamSepData.toClosureData
 
 /--
 Eval-level existential assumptions imply function-level existential algebraic assumptions.

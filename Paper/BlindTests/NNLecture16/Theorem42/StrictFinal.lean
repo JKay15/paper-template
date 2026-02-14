@@ -175,6 +175,44 @@ theorem theorem42_strict_final_natural_formula
   simpa using A.realize_eq p x
 
 /--
+Natural local-entrypoint for strict Theorem 42:
+requires algebraic closure only on `UnitCube d`.
+-/
+theorem theorem42_strict_final_natural_local
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalLocalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
+Natural local formula-level variant.
+-/
+theorem theorem42_strict_final_natural_local_formula
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalLocalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ (∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1) := by
+  obtain ⟨p, hp⟩ := theorem42_strict_final_natural_local (A := A) fStar hε
+  refine ⟨p, hp, ?_⟩
+  intro x
+  simpa using A.realize_eq p x
+
+/--
+Surjective-realization wrapper:
+if every continuous function on `UnitCube d` is realizable, strict final follows
+via automatic construction of natural local data.
+-/
+theorem theorem42_strict_final_of_surjective_realizeC
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42SurjectiveData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final_natural_local (A := A.toNaturalLocalData) fStar hε
+
+/--
 Subsingleton-domain wrapper for natural strict-final theorem:
 no explicit separation constructor is required from users.
 -/

@@ -28,6 +28,8 @@ namespace Paper.BlindTests
 #check TwoLayerStoneRouteEvalConstructiveParamSepData
 #check TwoLayerStoneRouteEvalSeparationOpsData
 #check TwoLayerTheorem42NaturalData
+#check TwoLayerTheorem42NaturalLocalData
+#check TwoLayerTheorem42SurjectiveData
 #check theorem42_strict_final
 #check theorem42_strict_final_formula
 #check theorem42_strict_final_of_exact_representation
@@ -43,6 +45,9 @@ namespace Paper.BlindTests
 #check theorem42_strict_final_of_eval_separation_ops
 #check theorem42_strict_final_natural
 #check theorem42_strict_final_natural_formula
+#check theorem42_strict_final_natural_local
+#check theorem42_strict_final_natural_local_formula
+#check theorem42_strict_final_of_surjective_realizeC
 #check TwoLayerEvalAlgebraOps.toNaturalData_of_subsingleton
 #check theorem42_strict_final_natural_of_subsingleton
 #check Theorem43PrimitiveModel
