@@ -1,0 +1,22 @@
+/-
+Copyright (c) 2026 Xiong Jiangkai. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Xiong Jiangkai, Codex
+-/
+import Paper.BlindTests.NNLecture16
+
+/-!
+# Paper.BlindTests.NNLecture16.SmokeFinal
+
+Smoke checks for strict-final theorem interfaces.
+-/
+
+namespace Paper.BlindTests
+
+#check TwoLayerStoneRouteData
+#check theorem42_strict_final
+#check theorem42_strict_final_formula
+#check Theorem43PrimitiveModel
+#check theorem43_strict_final
+
+end Paper.BlindTests

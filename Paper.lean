@@ -7,6 +7,7 @@ import Paper.Smoke
 import Paper.CaseStudies.NN_Th42_Th43
 import Paper.BlindTests.PACRadBlind
 import Paper.BlindTests.NNLecture16
+import Paper.BlindTests.NNLecture16.SmokeFinal
 
 /-!
 # Paper
