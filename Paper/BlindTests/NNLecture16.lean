@@ -1292,6 +1292,95 @@ theorem theorem43_with_pac_from_subgaussian_sample_data_natural_scale_activation
       hMain
 
 /--
+Theorem 43 + PAC from bounded, mean-zero samples (non-data endpoint).
+Uses mathlib Hoeffding lemma to derive `HasSubgaussianMGF` assumptions.
+-/
+theorem theorem43_with_pac_from_bounded_zeroMean_sample_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (n : Nat)
+    (X : H -> Nat -> Ω -> Real)
+    (a b ε : Real) (hε : 0 ≤ ε)
+    (hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ)
+    (hMeas : ∀ h : H, ∀ i : Nat, AEMeasurable (X h i) μ)
+    (hMemIcc : ∀ h : H, ∀ i : Nat, ∀ᵐ ω ∂μ, X h i ω ∈ Set.Icc a b)
+    (hMeanZero : ∀ h : H, ∀ i : Nat, ∫ ω, X h i ω ∂μ = 0)
+    (m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range n, X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal
+          (Real.exp (-(ε ^ 2) / (2 * (n : Real) * (((‖b - a‖₊ / 2) ^ 2 : NNReal) : Real)))) := by
+  let cBound : NNReal := ((‖b - a‖₊ / 2) ^ 2)
+  have hSubG : ∀ h : H, ∀ i < n, ProbabilityTheory.HasSubgaussianMGF (X h i) cBound μ := by
+    intro h i hi
+    simpa [cBound] using
+      (ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero
+        (X := X h i) (μ := μ) (a := a) (b := b)
+        (hm := hMeas h i) (hb := hMemIcc h i) (hc := hMeanZero h i))
+  simpa [cBound] using
+    theorem43_with_pac_from_subgaussian_sample_natural_scale_activationData
+      (μ := μ) (n := n)
+      (X := X) (c := cBound) (ε := ε) hε
+      hIndep hSubG
+      (m := m) (d := d) (hn := hn)
+      (w := w) (x := x)
+      (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm AAct hW hX
+
+/--
+Theorem 43 + PAC from bounded, mean-zero samples (data endpoint).
+Uses mathlib Hoeffding lemma to derive `HasSubgaussianMGF` assumptions.
+-/
+theorem theorem43_with_pac_from_bounded_zeroMean_sample_data_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsProbabilityMeasure μ]
+    (n : Nat)
+    (X : H -> Nat -> Ω -> Real)
+    (a b ε : Real) (hε : 0 ≤ ε)
+    (hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ)
+    (hMeas : ∀ h : H, ∀ i : Nat, AEMeasurable (X h i) μ)
+    (hMemIcc : ∀ h : H, ∀ i : Nat, ∀ᵐ ω ∂μ, X h i ω ∈ Set.Icc a b)
+    (hMeanZero : ∀ h : H, ∀ i : Nat, ∫ ω, X h i ω ∂μ = 0)
+    (m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range n, X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal
+          (Real.exp (-(ε ^ 2) / (2 * (n : Real) * (((‖b - a‖₊ / 2) ^ 2 : NNReal) : Real)))) := by
+  let cBound : NNReal := ((‖b - a‖₊ / 2) ^ 2)
+  have hSubG : ∀ h : H, ∀ i < n, ProbabilityTheory.HasSubgaussianMGF (X h i) cBound μ := by
+    intro h i hi
+    simpa [cBound] using
+      (ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero
+        (X := X h i) (μ := μ) (a := a) (b := b)
+        (hm := hMeas h i) (hb := hMemIcc h i) (hc := hMeanZero h i))
+  simpa [cBound] using
+    theorem43_with_pac_from_subgaussian_sample_data_natural_scale_activationData
+      (μ := μ) (n := n)
+      (X := X) (c := cBound) (ε := ε) hε
+      hIndep hSubG
+      (m := m) (d := d) (hn := hn)
+      (D := D)
+      (act := act) (B2' := B2')
+      hB2'Half hm AAct
+
+/--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from theorem inputs.
 -/
