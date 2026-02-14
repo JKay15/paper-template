@@ -17,13 +17,17 @@ namespace Paper.BlindTests
 #check TwoLayerStoneRouteClosureData
 #check TwoLayerStoneRoutePrimitiveData
 #check TwoLayerStoneRouteGeneratedData
+#check TwoLayerStoneRouteGeneratedParamSepData
 #check TwoLayerStoneRouteAlgebraClosedData
+#check TwoLayerStoneRouteAlgebraClosedParamSepData
 #check theorem42_strict_final
 #check theorem42_strict_final_formula
 #check theorem42_strict_final_of_exact_representation
 #check theorem42_strict_final_of_primitive
 #check theorem42_strict_final_of_generated
+#check theorem42_strict_final_of_generated_param_sep
 #check theorem42_strict_final_of_algebra_closed
+#check theorem42_strict_final_of_algebra_closed_param_sep
 #check Theorem43PrimitiveModel
 #check theorem43_strict_final
 

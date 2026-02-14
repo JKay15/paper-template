@@ -66,6 +66,24 @@ structure TwoLayerStoneRoutePrimitiveData (d m : Nat) [CompactSpace (UnitCube d)
 If the raw two-layer family separates points, then the subalgebra adjoined by that
 family also separates points.
 -/
+theorem sepRange_of_sepParams
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (realizeC : TwoLayerParams d m -> C(UnitCube d, Real))
+    (hSepParam :
+      ∀ x y : UnitCube d, x ≠ y ->
+        ∃ p : TwoLayerParams d m, realizeC p x ≠ realizeC p y) :
+    Set.SeparatesPoints
+      ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' (Set.range realizeC)) := by
+  intro x y hxy
+  rcases hSepParam x y hxy with ⟨p, hp⟩
+  refine ⟨(realizeC p : UnitCube d -> Real), ?_, hp⟩
+  refine ⟨realizeC p, ?_, rfl⟩
+  exact ⟨p, rfl⟩
+
+/--
+If the raw two-layer family separates points, then the subalgebra adjoined by that
+family also separates points.
+-/
 theorem adjoin_separatesPoints_of_range
     {d m : Nat} [CompactSpace (UnitCube d)]
     (realizeC : TwoLayerParams d m -> C(UnitCube d, Real))
@@ -102,6 +120,27 @@ structure TwoLayerStoneRouteGeneratedData (d m : Nat) [CompactSpace (UnitCube d)
           Algebra.adjoin ℝ (Set.range realizeC)))
 
 /--
+Generated witness with parameter-level point separation:
+use direct statement `∀ x ≠ y, ∃ p, realizeC p x ≠ realizeC p y`
+instead of `Set.SeparatesPoints` on range image.
+-/
+structure TwoLayerStoneRouteGeneratedParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, realizeC p x ≠ realizeC p y
+  hDenseInAdjoin :
+    DenseRange
+      (fun p : TwoLayerParams d m =>
+        (⟨realizeC p, Algebra.subset_adjoin (s := Set.range realizeC) ⟨p, rfl⟩⟩ :
+          Algebra.adjoin ℝ (Set.range realizeC)))
+
+/--
 Algebra-closed generated witness:
 `realizeC` can realize constants and is closed under pointwise `+` and `*`.
 Hence `adjoin (range realizeC)` is exactly representable by `realizeC`.
@@ -115,6 +154,29 @@ structure TwoLayerStoneRouteAlgebraClosedData (d m : Nat) [CompactSpace (UnitCub
   hSepRange :
     Set.SeparatesPoints
       ((fun f : C(UnitCube d, Real) => (f : UnitCube d -> Real)) '' (Set.range realizeC))
+  hConst :
+    ∀ c : Real,
+      ∃ p : TwoLayerParams d m, realizeC p = algebraMap ℝ C(UnitCube d, Real) c
+  hAdd :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p + realizeC q
+  hMul :
+    ∀ p q : TwoLayerParams d m,
+      ∃ r : TwoLayerParams d m, realizeC r = realizeC p * realizeC q
+
+/--
+Algebra-closed witness with parameter-level point separation.
+-/
+structure TwoLayerStoneRouteAlgebraClosedParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, realizeC p x ≠ realizeC p y
   hConst :
     ∀ c : Real,
       ∃ p : TwoLayerParams d m, realizeC p = algebraMap ℝ C(UnitCube d, Real) c
@@ -191,6 +253,27 @@ def TwoLayerStoneRouteGeneratedData.toPrimitiveData
     exact Algebra.subset_adjoin ⟨p, rfl⟩
   hDenseInWitness := A.hDenseInAdjoin
 
+/--
+Parameter-separation generated witness can be converted to
+range-separation generated witness.
+-/
+def TwoLayerStoneRouteGeneratedParamSepData.toGeneratedData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteGeneratedParamSepData d m) :
+    TwoLayerStoneRouteGeneratedData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  hSepRange := sepRange_of_sepParams A.realizeC A.hSepParam
+  hDenseInAdjoin := A.hDenseInAdjoin
+
+/-- Parameter-separation generated witness implies closure-level witness. -/
+def TwoLayerStoneRouteGeneratedParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteGeneratedParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toGeneratedData.toPrimitiveData.toClosureData
+
 /-- Generated witness implies closure-level witness by chaining previous adapters. -/
 def TwoLayerStoneRouteGeneratedData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -248,6 +331,29 @@ def TwoLayerStoneRouteAlgebraClosedData.toStoneRouteData
     have hsubset := A.adjoin_subset_range
     rcases hsubset g.property with ⟨p, hp⟩
     exact ⟨p, by simpa using hp⟩
+
+/--
+Parameter-separation algebra-closed witness can be converted to
+range-separation algebra-closed witness.
+-/
+def TwoLayerStoneRouteAlgebraClosedParamSepData.toAlgebraClosedData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedParamSepData d m) :
+    TwoLayerStoneRouteAlgebraClosedData d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  hSepRange := sepRange_of_sepParams A.realizeC A.hSepParam
+  hConst := A.hConst
+  hAdd := A.hAdd
+  hMul := A.hMul
+
+/-- Parameter-separation algebra-closed witness implies closure-level witness. -/
+def TwoLayerStoneRouteAlgebraClosedParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteAlgebraClosedParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toAlgebraClosedData.toStoneRouteData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData
