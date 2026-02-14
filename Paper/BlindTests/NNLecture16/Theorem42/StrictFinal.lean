@@ -20,10 +20,21 @@ uniform approximation up to any `ε > 0`, via the Stone-route witness.
 -/
 theorem theorem42_strict_final
     {d m : Nat} [CompactSpace (UnitCube d)]
-    (A : TwoLayerStoneRouteData d m)
+    (A : TwoLayerStoneRouteClosureData d m)
     (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
     ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε :=
   A.exists_uniform_le fStar hε
+
+/--
+Compatibility wrapper: exact-representation witnesses can be downgraded to
+closure-level witnesses and fed into `theorem42_strict_final`.
+-/
+theorem theorem42_strict_final_of_exact_representation
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
@@ -31,7 +42,7 @@ realized by the returned parameter tuple.
 -/
 theorem theorem42_strict_final_formula
     {d m : Nat} [CompactSpace (UnitCube d)]
-    (A : TwoLayerStoneRouteData d m)
+    (A : TwoLayerStoneRouteClosureData d m)
     (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
     ∃ p : TwoLayerParams d m,
       ‖A.realizeC p - fStar‖ ≤ ε

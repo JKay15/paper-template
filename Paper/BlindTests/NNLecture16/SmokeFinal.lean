@@ -14,8 +14,10 @@ Smoke checks for strict-final theorem interfaces.
 namespace Paper.BlindTests
 
 #check TwoLayerStoneRouteData
+#check TwoLayerStoneRouteClosureData
 #check theorem42_strict_final
 #check theorem42_strict_final_formula
+#check theorem42_strict_final_of_exact_representation
 #check Theorem43PrimitiveModel
 #check theorem43_strict_final
 
