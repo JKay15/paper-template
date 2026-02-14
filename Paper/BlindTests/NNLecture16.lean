@@ -1252,6 +1252,46 @@ theorem theorem43_with_pac_from_subgaussian_sample_natural_scale_activationData
       hB2 hB2'Half hC2 hm AAct hW hX
 
 /--
+Theorem 43 + PAC from subgaussian family tails
+using `SampleConcentrationData.ofSubgaussianFamily` (data endpoint).
+-/
+theorem theorem43_with_pac_from_subgaussian_sample_data_natural_scale_activationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) [IsFiniteMeasure μ]
+    (n : Nat)
+    (X : H -> Nat -> Ω -> Real)
+    (c : NNReal) (ε : Real) (hε : 0 ≤ ε)
+    (hIndep : ∀ h : H, ProbabilityTheory.iIndepFun (X h) μ)
+    (hSubG : ∀ h : H, ∀ i < n, ProbabilityTheory.HasSubgaussianMGF (X h i) c μ)
+    (m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (AAct : ActivationLipschitzData act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, {ω | ε ≤ ∑ i ∈ Finset.range n, X h i ω}) ≤
+      (Fintype.card H : ENNReal) *
+        ENNReal.ofReal (Real.exp (-(ε ^ 2) / (2 * (n : Real) * (c : Real)))) := by
+    have hMain :
+      radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+        (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+      ∧ μ (⋃ h : H, (SampleConcentrationData.ofSubgaussianFamily μ n X c ε hε hIndep hSubG).bad h) ≤
+        (Fintype.card H : ENNReal) *
+          (SampleConcentrationData.ofSubgaussianFamily μ n X c ε hε hIndep hSubG).δ := by
+      let S := SampleConcentrationData.ofSubgaussianFamily μ n X c ε hε hIndep hSubG
+      exact theorem43_with_pac_from_concentration_bundle_natural_scale_activationData
+        (μ := μ)
+        (C := S.toFiniteClassConcentrationData)
+        (n := n) (m := m) (d := d) (hn := hn)
+        (w := D.w) (x := D.x)
+        (act := act) (B2 := D.B2) (B2' := B2') (C2 := D.C2)
+        D.hB2 hB2'Half D.hC2 hm AAct D.hW D.hX
+    simpa [SampleConcentrationData.ofSubgaussianFamily] using
+      hMain
+
+/--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from theorem inputs.
 -/
