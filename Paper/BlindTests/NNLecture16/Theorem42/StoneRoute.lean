@@ -894,6 +894,26 @@ noncomputable def TwoLayerStoneRouteEvalSeparationOpsData.toClosureData
     TwoLayerStoneRouteClosureData d m :=
   A.toEvalConstructiveParamSepData.toClosureData
 
+/--
+Constructive separation-operator witness can be promoted directly to the natural
+strict-input package.
+-/
+def TwoLayerStoneRouteEvalSeparationOpsData.toNaturalData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalSeparationOpsData d m) :
+    TwoLayerTheorem42NaturalData d m where
+  act := A.ops.act
+  realizeC := A.ops.realizeC
+  realize_eq := A.ops.realize_eq
+  constParam := A.ops.constParam
+  addParam := A.ops.addParam
+  mulParam := A.ops.mulParam
+  eval_const := A.ops.eval_const
+  eval_add := A.ops.eval_add
+  eval_mul := A.ops.eval_mul
+  sepParam := A.sepParam
+  sep_spec := A.sep_spec
+
 /-- Build constructive eval algebra ops from natural final-input data. -/
 def TwoLayerTheorem42NaturalData.toEvalAlgebraOps
     {d m : Nat} [CompactSpace (UnitCube d)]

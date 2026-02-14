@@ -148,6 +148,17 @@ theorem theorem42_strict_final_of_eval_separation_ops
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Natural-entry wrapper from constructive eval-separation ops:
+reuse existing operator package, but expose the natural strict interface.
+-/
+theorem theorem42_strict_final_natural_of_eval_separation_ops
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalSeparationOpsData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.ops.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toNaturalData.toClosureData) fStar hε
+
+/--
 Natural final entrypoint for strict Theorem 42:
 inputs are only concrete two-layer constructive operators and point-separation constructor.
 -/
