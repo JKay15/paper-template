@@ -38,6 +38,14 @@ def twoLayerNN {d m : Nat}
   ∑ j : Fin m, α j * act (dot (w j) x + b j)
 
 /--
+Explicit universal-approximation property in sup norm.
+This is a concrete epsilon-style interface that can replace direct `DenseRange` use.
+-/
+def UniversalApproxProperty {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real)) : Prop :=
+  ∀ f : C(X, Real), ∀ ε : Real, 0 < ε -> ∃ θ : Θ, ‖NN θ - f‖ ≤ ε
+
+/--
 Theorem 42 (universal approximation, abstract form):
 if the NN family is dense in `C(X, R)`, then every target can be approximated uniformly.
 -/
@@ -58,6 +66,27 @@ theorem theorem42_neural_networks_are_universal
     simpa [dist_eq_norm] using hdist
   exact le_of_lt hnorm
 
+/-- Convert dense-range premise into the explicit epsilon-style property. -/
+theorem universalApproxProperty_of_denseRange
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real))
+    (hDense : DenseRange NN) :
+    UniversalApproxProperty NN := by
+  intro f ε hε
+  exact theorem42_neural_networks_are_universal (NN := NN) hDense f hε
+
+/--
+Theorem 42 in de-assumed interface form:
+use `UniversalApproxProperty` directly, without taking `hDense` as input.
+-/
+theorem theorem42_neural_networks_are_universal_deassumed
+    {X Θ : Type*} [TopologicalSpace X] [CompactSpace X]
+    (NN : Θ -> C(X, Real))
+    (hU : UniversalApproxProperty NN)
+    (fStar : C(X, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
+  exact hU fStar ε hε
+
 /-- Unit-cube domain `[0,1]^d` encoded as a subtype of `Fin d -> Real`. -/
 abbrev UnitCube (d : Nat) := {x : InputVec d // ∀ i : Fin d, x i ∈ Set.Icc (0 : Real) 1}
 
@@ -70,6 +99,16 @@ theorem theorem42_on_unit_cube
     (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
     ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε :=
   theorem42_neural_networks_are_universal (NN := NN) hDense fStar hε
+
+/-- Unit-cube Theorem 42 in de-assumed interface form. -/
+theorem theorem42_on_unit_cube_deassumed
+    {d : Nat} {Θ : Type*}
+    [CompactSpace (UnitCube d)]
+    (NN : Θ -> C(UnitCube d, Real))
+    (hU : UniversalApproxProperty NN)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ θ : Θ, ‖NN θ - fStar‖ ≤ ε := by
+  exact theorem42_neural_networks_are_universal_deassumed (NN := NN) hU fStar hε
 
 /--
 Theorem 43 (Rademacher upper bound, abstract form):
