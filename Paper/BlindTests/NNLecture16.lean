@@ -561,6 +561,14 @@ structure ActivationLipschitzData (act : Real -> Real) : Prop where
   hActZero : act 0 = 0
   hLip : LipschitzWith (1 : NNReal) act
 
+/-- Build packaged activation data from explicit `hActZero/hLip` assumptions. -/
+private def ActivationLipschitzData.ofZeroAndLipschitzWith
+    {act : Real -> Real}
+    (hActZero : act 0 = 0)
+    (hLip : LipschitzWith (1 : NNReal) act) :
+    ActivationLipschitzData act :=
+  ⟨hActZero, hLip⟩
+
 /-- Convert packaged standard activation assumptions to local `OneLipschitzAtZero`. -/
 private lemma ActivationLipschitzData.toOneLipschitzAtZero
     {act : Real -> Real} (A : ActivationLipschitzData act) :
@@ -1131,15 +1139,13 @@ theorem theorem43_with_pac_from_concentration_natural_scale_lipschitzWith
     radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
       (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
     ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
-  have hLip0 : OneLipschitzAtZero act :=
-    oneLipschitzAtZero_of_lipschitzWith_one act hActZero hLip
-  exact theorem43_with_pac_from_concentration_natural_scale
+  exact theorem43_with_pac_from_concentration_natural_scale_activationData
     (μ := μ) (bad := bad) (tail := tail) (δ := δ)
     hConc hTailLe
     (n := n) (m := m) (d := d) (hn := hn)
     (w := w) (x := x)
     (act := act) (B2 := B2) (B2' := B2') (C2 := C2)
-    hB2 hB2'Half hC2 hm hLip0 hW hX
+    hB2 hB2'Half hC2 hm (ActivationLipschitzData.ofZeroAndLipschitzWith hActZero hLip) hW hX
 
 /--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
@@ -1188,16 +1194,14 @@ theorem theorem43_with_pac_from_concentration_data_natural_scale_lipschitzWith
     radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
       (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
     ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
-  let C : FiniteClassConcentrationData (H := H) μ :=
-    { bad := bad
-      tail := tail
-      δ := δ
-      hConc := hConc
-      hTailLe := hTailLe }
-  simpa [C] using theorem43_with_pac_from_concentration_data_bundle_natural_scale_lipschitzWith
-    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+  have hLip0 : OneLipschitzAtZero act :=
+    oneLipschitzAtZero_of_lipschitzWith_one act hActZero hLip
+  exact theorem43_with_pac_from_concentration_data_natural_scale
+    (μ := μ) (bad := bad) (tail := tail) (δ := δ)
+    hConc hTailLe
+    (n := n) (m := m) (d := d) (hn := hn)
     (D := D) (act := act) (B2' := B2')
-    hB2'Half hm hActZero hLip
+    hB2'Half hm hLip0
 
 /--
 Theorem 43 + PAC concentration (data wrapper form) with packaged standard activation assumptions.
