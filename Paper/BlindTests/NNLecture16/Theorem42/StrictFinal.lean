@@ -148,6 +148,33 @@ theorem theorem42_strict_final_of_eval_separation_ops
   exact theorem42_strict_final (A := A.toClosureData) fStar hε
 
 /--
+Natural final entrypoint for strict Theorem 42:
+inputs are only concrete two-layer constructive operators and point-separation constructor.
+-/
+theorem theorem42_strict_final_natural
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m, ‖A.realizeC p - fStar‖ ≤ ε := by
+  exact theorem42_strict_final (A := A.toClosureData) fStar hε
+
+/--
+Natural formula-level strict variant:
+returns the parameter and the explicit formula witness.
+-/
+theorem theorem42_strict_final_natural_formula
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalData d m)
+    (fStar : C(UnitCube d, Real)) {ε : Real} (hε : 0 < ε) :
+    ∃ p : TwoLayerParams d m,
+      ‖A.realizeC p - fStar‖ ≤ ε
+      ∧ (∀ x : UnitCube d, A.realizeC p x = evalTwoLayerParams A.act p x.1) := by
+  obtain ⟨p, hp⟩ := theorem42_strict_final_natural (A := A) fStar hε
+  refine ⟨p, hp, ?_⟩
+  intro x
+  simpa using A.realize_eq p x
+
+/--
 Formula-level strict variant: additionally exposes the concrete two-layer formula
 realized by the returned parameter tuple.
 -/

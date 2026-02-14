@@ -322,6 +322,36 @@ structure TwoLayerStoneRouteEvalSeparationOpsData
     ∀ x y : UnitCube d, x ≠ y ->
       ops.realizeC (sepParam x y) x ≠ ops.realizeC (sepParam x y) y
 
+/--
+Natural final-input data for strict Theorem 42:
+users provide only the concrete two-layer realization map, constructive algebra ops,
+and a constructive point-separation operator.
+-/
+structure TwoLayerTheorem42NaturalData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  constParam : Real -> TwoLayerParams d m
+  addParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  mulParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  eval_const :
+    ∀ c : Real, ∀ x : InputVec d, evalTwoLayerParams act (constParam c) x = c
+  eval_add :
+    ∀ p q : TwoLayerParams d m, ∀ x : InputVec d,
+      evalTwoLayerParams act (addParam p q) x =
+        evalTwoLayerParams act p x + evalTwoLayerParams act q x
+  eval_mul :
+    ∀ p q : TwoLayerParams d m, ∀ x : InputVec d,
+      evalTwoLayerParams act (mulParam p q) x =
+        evalTwoLayerParams act p x * evalTwoLayerParams act q x
+  sepParam : UnitCube d -> UnitCube d -> TwoLayerParams d m
+  sep_spec :
+    ∀ x y : UnitCube d, x ≠ y ->
+      realizeC (sepParam x y) x ≠ realizeC (sepParam x y) y
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -654,6 +684,37 @@ noncomputable def TwoLayerStoneRouteEvalSeparationOpsData.toClosureData
     (A : TwoLayerStoneRouteEvalSeparationOpsData d m) :
     TwoLayerStoneRouteClosureData d m :=
   A.toEvalConstructiveParamSepData.toClosureData
+
+/-- Build constructive eval algebra ops from natural final-input data. -/
+def TwoLayerTheorem42NaturalData.toEvalAlgebraOps
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalData d m) :
+    TwoLayerEvalAlgebraOps d m where
+  act := A.act
+  realizeC := A.realizeC
+  realize_eq := A.realize_eq
+  constParam := A.constParam
+  addParam := A.addParam
+  mulParam := A.mulParam
+  eval_const := A.eval_const
+  eval_add := A.eval_add
+  eval_mul := A.eval_mul
+
+/-- Build constructive separation-ops witness from natural final-input data. -/
+def TwoLayerTheorem42NaturalData.toEvalSeparationOpsData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalData d m) :
+    TwoLayerStoneRouteEvalSeparationOpsData d m where
+  ops := A.toEvalAlgebraOps
+  sepParam := A.sepParam
+  sep_spec := A.sep_spec
+
+/-- Natural final-input data implies closure-level Stone witness. -/
+noncomputable def TwoLayerTheorem42NaturalData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerTheorem42NaturalData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toEvalSeparationOpsData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData

@@ -27,6 +27,7 @@ namespace Paper.BlindTests
 #check TwoLayerEvalAlgebraOps
 #check TwoLayerStoneRouteEvalConstructiveParamSepData
 #check TwoLayerStoneRouteEvalSeparationOpsData
+#check TwoLayerTheorem42NaturalData
 #check theorem42_strict_final
 #check theorem42_strict_final_formula
 #check theorem42_strict_final_of_exact_representation
@@ -40,6 +41,8 @@ namespace Paper.BlindTests
 #check theorem42_strict_final_of_eval_exists_param_sep
 #check theorem42_strict_final_of_eval_constructive_param_sep
 #check theorem42_strict_final_of_eval_separation_ops
+#check theorem42_strict_final_natural
+#check theorem42_strict_final_natural_formula
 #check Theorem43PrimitiveModel
 #check theorem43_strict_final
 
