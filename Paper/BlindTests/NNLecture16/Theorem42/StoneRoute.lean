@@ -274,6 +274,42 @@ structure TwoLayerStoneRouteEvalExistsParamSepData
           evalTwoLayerParams act r x =
             evalTwoLayerParams act p x * evalTwoLayerParams act q x
 
+/--
+Constructive eval-level algebra operations on two-layer parameters.
+This interface avoids existential quantifiers in user inputs.
+-/
+structure TwoLayerEvalAlgebraOps
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  act : Real -> Real
+  realizeC : TwoLayerParams d m -> C(UnitCube d, Real)
+  realize_eq :
+    ∀ p : TwoLayerParams d m, ∀ x : UnitCube d,
+      realizeC p x = evalTwoLayerParams act p x.1
+  constParam : Real -> TwoLayerParams d m
+  addParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  mulParam : TwoLayerParams d m -> TwoLayerParams d m -> TwoLayerParams d m
+  eval_const :
+    ∀ c : Real, ∀ x : InputVec d, evalTwoLayerParams act (constParam c) x = c
+  eval_add :
+    ∀ p q : TwoLayerParams d m, ∀ x : InputVec d,
+      evalTwoLayerParams act (addParam p q) x =
+        evalTwoLayerParams act p x + evalTwoLayerParams act q x
+  eval_mul :
+    ∀ p q : TwoLayerParams d m, ∀ x : InputVec d,
+      evalTwoLayerParams act (mulParam p q) x =
+        evalTwoLayerParams act p x * evalTwoLayerParams act q x
+
+/--
+Constructive param-separation witness at eval level:
+algebraic closure is provided by explicit parameter constructors.
+-/
+structure TwoLayerStoneRouteEvalConstructiveParamSepData
+    (d m : Nat) [CompactSpace (UnitCube d)] where
+  ops : TwoLayerEvalAlgebraOps d m
+  hSepParam :
+    ∀ x y : UnitCube d, x ≠ y ->
+      ∃ p : TwoLayerParams d m, ops.realizeC p x ≠ ops.realizeC p y
+
 /-- Exact representability implies closure-level representability. -/
 def TwoLayerStoneRouteData.toClosureData
     {d m : Nat} [CompactSpace (UnitCube d)]
@@ -559,6 +595,34 @@ noncomputable def TwoLayerStoneRouteEvalExistsParamSepData.toClosureData
     (A : TwoLayerStoneRouteEvalExistsParamSepData d m) :
     TwoLayerStoneRouteClosureData d m :=
   (A.toAlgebraicExistsParamSepData).toClosureData
+
+/--
+Constructive eval-level witness implies existential eval-level witness.
+-/
+def TwoLayerStoneRouteEvalConstructiveParamSepData.toEvalExistsParamSepData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalConstructiveParamSepData d m) :
+    TwoLayerStoneRouteEvalExistsParamSepData d m where
+  act := A.ops.act
+  realizeC := A.ops.realizeC
+  realize_eq := A.ops.realize_eq
+  hSepParam := A.hSepParam
+  hConstEvalExists := by
+    intro c
+    exact ⟨A.ops.constParam c, A.ops.eval_const c⟩
+  hAddEvalExists := by
+    intro p q
+    exact ⟨A.ops.addParam p q, A.ops.eval_add p q⟩
+  hMulEvalExists := by
+    intro p q
+    exact ⟨A.ops.mulParam p q, A.ops.eval_mul p q⟩
+
+/-- Constructive eval-level witness implies closure-level Stone witness. -/
+noncomputable def TwoLayerStoneRouteEvalConstructiveParamSepData.toClosureData
+    {d m : Nat} [CompactSpace (UnitCube d)]
+    (A : TwoLayerStoneRouteEvalConstructiveParamSepData d m) :
+    TwoLayerStoneRouteClosureData d m :=
+  A.toEvalExistsParamSepData.toClosureData
 
 /-- Algebra-closed data yields closure-level Stone witness automatically. -/
 def TwoLayerStoneRouteAlgebraClosedData.toClosureData
