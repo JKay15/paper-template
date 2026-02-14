@@ -448,6 +448,19 @@ private lemma pointwise_linear_bound_of_data
   pointwise_linear_bound_of_norm_bounds D.w D.x D.B2 D.C2 D.hB2 D.hW D.hX
 
 /--
+Packaged finite-class concentration premises:
+for each hypothesis, a bad-event tail plus a uniform cap `δ`.
+-/
+structure FiniteClassConcentrationData
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H]
+    (μ : Measure Ω) where
+  bad : H -> Set Ω
+  tail : H -> ENNReal
+  δ : ENNReal
+  hConc : ∀ h : H, μ (bad h) ≤ tail h
+  hTailLe : ∀ h : H, tail h ≤ δ
+
+/--
 Theorem 43 (de-assumed version):
 derive the final bound from pointwise sample control + activation growth control,
 without directly assuming `hSingleUnit` / `hContractAbs`.
@@ -715,6 +728,39 @@ Theorem 43 + PAC from concentration premises (natural scale version):
 replace direct `hTail` with a two-step concentration assumption
 `μ(bad h) ≤ tail h ≤ δ`.
 -/
+theorem theorem43_with_pac_from_concentration_bundle_natural_scale
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (C : FiniteClassConcentrationData (H := H) μ)
+    (n m d : Nat) (hn : 0 < n)
+    (w : H -> EuclideanSpace Real (Fin d))
+    (x : Sample (EuclideanSpace Real (Fin d)) n)
+    (act : Real -> Real) (B2 B2' C2 : Real)
+    (hB2 : 0 ≤ B2) (hB2'Half : (1 / 2 : Real) ≤ B2') (hC2 : 0 ≤ C2)
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act)
+    (hW : ∀ h : H, ‖w h‖ ≤ B2)
+    (hX : ∀ i : Fin n, ‖x i‖ ≤ C2 / Real.sqrt (n : Real)) :
+    radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, C.bad h) ≤ (Fintype.card H : ENNReal) * C.δ := by
+  constructor
+  · exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
+      (n := n) (m := m) (d := d) (hn := hn)
+      (w := w) (x := x) (act := act)
+      (B2 := B2) (B2' := B2') (C2 := C2)
+      hB2 hB2'Half hC2 hm hLip0 hW hX
+  · calc
+      μ (⋃ h : H, C.bad h) ≤ ∑ h : H, C.tail h :=
+        pac_badEvent_from_concentration μ C.bad C.tail C.hConc
+      _ ≤ ∑ h : H, C.δ :=
+        Finset.sum_le_sum (fun h _ => C.hTailLe h)
+      _ = (Fintype.card H : ENNReal) * C.δ := by
+        simp
+
+/--
+Theorem 43 + PAC from concentration premises (natural scale version):
+wrapper form with explicit `bad/tail/δ` arguments.
+-/
 theorem theorem43_with_pac_from_concentration_natural_scale
     {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
     (μ : Measure Ω) (bad : H -> Set Ω) (tail : H -> ENNReal) (δ : ENNReal)
@@ -732,23 +778,49 @@ theorem theorem43_with_pac_from_concentration_natural_scale
     radStd n (fun h t => act (inner ℝ (w h) t)) x ≤
       (2 * B2' * Real.sqrt (m : Real)) * (B2 * C2 / Real.sqrt (n : Real))
     ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
-  constructor
-  · exact theorem43_rademacher_linear_from_norm_bounds_natural_scale
-      (n := n) (m := m) (d := d) (hn := hn)
-      (w := w) (x := x) (act := act)
-      (B2 := B2) (B2' := B2') (C2 := C2)
-      hB2 hB2'Half hC2 hm hLip0 hW hX
-  · calc
-      μ (⋃ h : H, bad h) ≤ ∑ h : H, tail h :=
-        pac_badEvent_from_concentration μ bad tail hConc
-      _ ≤ ∑ h : H, δ :=
-        Finset.sum_le_sum (fun h _ => hTailLe h)
-      _ = (Fintype.card H : ENNReal) * δ := by
-        simp
+  let C : FiniteClassConcentrationData (H := H) μ :=
+    { bad := bad
+      tail := tail
+      δ := δ
+      hConc := hConc
+      hTailLe := hTailLe }
+  simpa [C] using theorem43_with_pac_from_concentration_bundle_natural_scale
+    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+    (w := w) (x := x) (act := act)
+    (B2 := B2) (B2' := B2') (C2 := C2)
+    hB2 hB2'Half hC2 hm hLip0 hW hX
 
 /--
 Theorem 43 + PAC concentration from packaged bounded linear-class data.
 This removes direct `hW/hX` arguments from theorem inputs.
+-/
+theorem theorem43_with_pac_from_concentration_data_bundle_natural_scale
+    {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
+    (μ : Measure Ω) (C : FiniteClassConcentrationData (H := H) μ)
+    (n m d : Nat) (hn : 0 < n)
+    (D : LinearClassData H d n)
+    (act : Real -> Real) (B2' : Real)
+    (hB2'Half : (1 / 2 : Real) ≤ B2')
+    (hm : 1 ≤ m)
+    (hLip0 : OneLipschitzAtZero act) :
+    radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
+      (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
+    ∧ μ (⋃ h : H, C.bad h) ≤ (Fintype.card H : ENNReal) * C.δ := by
+  constructor
+  · exact theorem43_rademacher_linear_from_data_natural_scale
+      (n := n) (m := m) (d := d) (hn := hn)
+      (D := D) (act := act) (B2' := B2')
+      hB2'Half hm hLip0
+  · calc
+      μ (⋃ h : H, C.bad h) ≤ ∑ h : H, C.tail h :=
+        pac_badEvent_from_concentration μ C.bad C.tail C.hConc
+      _ ≤ ∑ h : H, C.δ :=
+        Finset.sum_le_sum (fun h _ => C.hTailLe h)
+      _ = (Fintype.card H : ENNReal) * C.δ := by simp
+
+/--
+Theorem 43 + PAC concentration from packaged bounded linear-class data.
+Wrapper form with explicit `bad/tail/δ` arguments.
 -/
 theorem theorem43_with_pac_from_concentration_data_natural_scale
     {Ω H : Type*} [MeasurableSpace Ω] [Fintype H] [Nonempty H]
@@ -764,16 +836,15 @@ theorem theorem43_with_pac_from_concentration_data_natural_scale
     radStd n (fun h t => act (inner ℝ (D.w h) t)) D.x ≤
       (2 * B2' * Real.sqrt (m : Real)) * (D.B2 * D.C2 / Real.sqrt (n : Real))
     ∧ μ (⋃ h : H, bad h) ≤ (Fintype.card H : ENNReal) * δ := by
-  constructor
-  · exact theorem43_rademacher_linear_from_data_natural_scale
-      (n := n) (m := m) (d := d) (hn := hn)
-      (D := D) (act := act) (B2' := B2')
-      hB2'Half hm hLip0
-  · calc
-      μ (⋃ h : H, bad h) ≤ ∑ h : H, tail h :=
-        pac_badEvent_from_concentration μ bad tail hConc
-      _ ≤ ∑ h : H, δ :=
-        Finset.sum_le_sum (fun h _ => hTailLe h)
-      _ = (Fintype.card H : ENNReal) * δ := by simp
+  let C : FiniteClassConcentrationData (H := H) μ :=
+    { bad := bad
+      tail := tail
+      δ := δ
+      hConc := hConc
+      hTailLe := hTailLe }
+  simpa [C] using theorem43_with_pac_from_concentration_data_bundle_natural_scale
+    (μ := μ) (C := C) (n := n) (m := m) (d := d) (hn := hn)
+    (D := D) (act := act) (B2' := B2')
+    hB2'Half hm hLip0
 
 end Paper.BlindTests
